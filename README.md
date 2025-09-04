@@ -1,297 +1,205 @@
 # 🦋 ButterflyAR
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.19.0-blue.svg)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-3.3.0-blue.svg)](https://dart.dev/)
 [![Platforms](https://img.shields.io/badge/platforms-Android%20|%20iOS%20|%20Web%20|%20Windows%20|%20macOS%20|%20Linux-lightgrey.svg)](https://flutter.dev/multi-platform/desktop)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
-Una aplicación multiplataforma para explorar mariposas en Realidad Aumentada con un diseño minimalista y soporte para dark mode.
+Una aplicación educativa multiplataforma que permite explorar mariposas en Realidad Aumentada. Con un diseño minimalista, soporte para modo oscuro y una experiencia inmersiva, ButterflyAR es perfecta para amantes de la naturaleza y la tecnología.
 
-![ButterflyAR Logo](./assets/logo.png)
+![ButterflyAR Showcase](./assets/icon/favicon-light.png)
 
 ## 📋 Tabla de Contenidos
 
-- [Características](#características)
-- [Capturas de Pantalla](#capturas-de-pantalla)
-- [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Uso](#cómo-usar)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Contribución](#contribución)
-- [Licencia](#licencia)
-- [Contacto](#contacto)
+- [✨ Características](#-características)
+- [🚀 Demo Rápida](#-demo-rápida)
+- [📱 Requisitos](#-requisitos)
+- [⚙️ Instalación](#️-instalación)
+- [🛠️ Configuración](#️-configuración)
+- [🏗️ Estructura del Proyecto](#️-estructura-del-proyecto)
+- [🦋 Gestión de Especies](#-gestión-de-especies)
+- [🔍 Integración QR](#-integración-qr)
+- [👥 Contribución](#-contribución)
+- [📄 Licencia](#-licencia)
+- [📧 Contacto](#-contacto)
+- [🙏 Agradecimientos](#-agradecimientos)
 
 ## ✨ Características
 
-### 🦋 Visualización en Realidad Aumentada
+### 🦋 Realidad Aumentada Avanzada
 
-- Visualiza modelos 3D realistas de mariposas en tu entorno
-- Interactúa con las mariposas usando gestos táctiles
-- Ajusta el tamaño y la rotación de los modelos
+- Visualización de modelos 3D de alta calidad en tiempo real
+- Interacción intuitiva con gestos táctiles (escala, rotación, traslación)
+- Integración perfecta con el entorno físico del usuario
 
-### 📱 Multiplataforma
+### 🌐 Multiplataforma
 
-- Compatible con dispositivos móviles (Android/iOS)
-- Soporte para escritorio (Windows, macOS, Linux)
-- Versión web accesible desde cualquier navegador moderno
+- Soporte nativo para móviles (Android/iOS)
+- Versión web accesible desde cualquier navegador
+- Compatibilidad con dispositivos de escritorio (Windows, macOS, Linux)
 
-### 🎨 Diseño Moderno
+### 🎨 Experiencia de Usuario
 
-- Interfaz de usuario intuitiva y minimalista
-- Soporte para modo oscuro/claro
-- Animaciones fluidas y transiciones suaves
+- Interfaz minimalista y accesible
+- Tema claro/oscuro que se adapta a la configuración del sistema
+- Transiciones fluidas y animaciones naturales
 
-### 📚 Catálogo Completo
+### 📚 Base de Datos de Especies
 
-- Información detallada de cada especie
-- Fotos de alta calidad
-- Datos científicos y curiosidades
+- Información científica detallada de cada mariposa
+- Galería de imágenes de alta resolución
+- Datos de conservación y distribución geográfica
 
-### 🔍 Escaneo de Códigos QR
+### 🔍 Sistema de Descubrimiento
 
-- Escanea códigos QR para desbloquear especies especiales
-- Comparte tus descubrimientos fácilmente
-
-
-## 📸 Capturas de Pantalla
-
-| Móvil | Escritorio |
-|-------|------------|
-| ![Vista principal en móvil](./screenshots/mobile_home.jpg) | ![Experiencia AR en escritorio](./screenshots/desktop_ar.jpg) |
-| *Vista principal en móvil* | *Experiencia AR en escritorio* |
-
+- Escaneo de códigos QR para desbloquear contenido exclusivo
+- Mapa interactivo de avistamientos
+- Sistema de logros y coleccionables
 
 ## 🚀 Requisitos
 
-- Flutter SDK (versión 3.19.0 o superior)
-- Dart SDK (versión 3.3.0 o superior)
-- Para desarrollo web: Chrome 84+ o Edge 84+
-- Para desarrollo de escritorio: Ver [requisitos de Flutter Desktop](https://docs.flutter.dev/desktop)
+### Para Usuarios
 
+- **Android**: 8.0 (API 26) o superior
+- **iOS**: 13.0 o superior
+- **Web**: Chrome 90+, Firefox 88+, Safari 14.1+, Edge 90+
+- **Escritorio**: Windows 10/11, macOS 10.14+, Linux (con soporte de escritorio)
+
+### Para Desarrolladores
+
+- **Flutter SDK**: 3.19.0 o superior
+- **Dart SDK**: 3.3.0 o superior
+- **Android Studio** / **VS Code** con extensiones de Flutter
+- **Xcode** 14.0+ (para desarrollo iOS/macOS)
+- **Git** para control de versiones
 
 ## ⚙️ Instalación
 
-### Requisitos Previos
+### 1. Clonar el Repositorio
 
-1. **Instala Flutter**
-   - Sigue la [guía oficial de instalación](https://docs.flutter.dev/get-started/install)
-   - Asegúrate de que Flutter esté en tu PATH
-   - Verifica la instalación con:
-     ```bash
-     flutter doctor
-     ```
+```bash
+git clone https://github.com/Manuekle/butterflyar.git
+cd butterflyar
+```
 
-2. **Clona el repositorio**
-   ```bash
-   git clone https://github.com/Manuekle/butterflyar.git
-   cd butterflyar
-   ```
-
-3. **Obtén las dependencias**
-   ```bash
-   flutter pub get
-   ```
-
-4. **Ejecuta la aplicación**
-   ```bash
-   # Para web
-   flutter run -d chrome --web-renderer html
-   
-   # Para Android
-   flutter run -d <device_id>
-   
-   # Para iOS
-   cd ios
-   pod install
-   cd ..
-   flutter run
-   
-   # Para escritorio
-   flutter config --enable-<platform>-desktop
-   flutter run -d <platform>
-   ```
-
-## 🚀 Cómo Usar
-
-### Dispositivos Móviles (Android/iOS)
-1. **Prepara tu dispositivo**
-   - Android: Activa la opción "Modo desarrollador" y "Depuración USB"
-   - iOS: Conecta tu dispositivo y confía en el certificado de desarrollador
-
-2. **Ejecuta la aplicación**
-   ```bash
-   # Para Android
-   flutter run -d <device_id>
-   
-   # Para iOS
-   flutter run -d <device_id>
-   ```
-
-### Navegador Web
-1. **Ejecuta en modo desarrollo**
-   ```bash
-   flutter run -d chrome --web-renderer html --web-port 3000
-   ```
-   La aplicación estará disponible en `http://localhost:3000`
-
-### Escritorio (Windows/macOS/Linux)
-1. **Habilita el soporte de escritorio**
-   ```bash
-   flutter config --enable-<platform>-desktop
-   ```
-
-2. **Ejecuta la aplicación**
-   ```bash
-   flutter run -d <windows|macos|linux>
-   ```
-
-## 🛠️ Dependencias Principales
-
-| Paquete | Versión | Propósito |
-|---------|---------|-----------|
-| `flutter` | ^3.19.0 | SDK principal |
-| `provider` | ^6.1.1 | Gestión de estado y tema |
-| `ar_flutter_plugin` | ^1.0.0 | Realidad Aumentada |
-| `qr_code_scanner` | ^1.0.1 | Escaneo de códigos QR |
-| `shared_preferences` | ^2.2.2 | Almacenamiento local |
-| `cached_network_image` | ^3.3.1 | Caché de imágenes |
-| `url_launcher` | ^6.2.2 | Abrir enlaces externos |
-
-Para instalar todas las dependencias:
+### 2. Obtener Dependencias
 
 ```bash
 flutter pub get
 ```
 
+### 3. Configurar Plataforma Objetivo
+
+#### Android
+
+```bash
+flutter create --platforms=android .
+```
+
+#### iOS
+
+```bash
+flutter create --platforms=ios .
+cd ios
+pod install
+cd ..
+```
+
+#### Web
+
+```bash
+flutter create --platforms=web .
+```
+
+### 4. Ejecutar la Aplicación
+
+```bash
+# Para Android
+flutter run -d <device_id>
+
+# Para iOS
+flutter run -d <device_id>
+
+# Para web
+flutter run -d chrome --web-renderer html
+```
+
+## 🚀 Cómo Usar
+
+### Dispositivos Móviles (Android/iOS)
+
+1. **Prepara tu dispositivo**
+
+   - **Android**:
+     - Activa la opción "Opciones de desarrollador" y "Depuración USB"
+     - Asegúrate de que el dispositivo soporte ARCore
+   - **iOS**:
+     - Conecta tu dispositivo y confía en el certificado de desarrollador
+     - Asegúrate de que el dispositivo soporte ARKit (iPhone 6s o superior)
+
+2. **Configura los modelos 3D**
+
+   - **Para Android**:
+
+     1. Coloca los archivos `.glb` en `assets/models/`
+     2. Asegúrate de que estén referenciados en `pubspec.yaml`
+
+   - **Para iOS**:
+     1. Crea la carpeta `models.scnassets` en `ios/Runner/` si no existe
+     2. Importa los archivos `.scn` usando Xcode
+     3. Asegúrate de que "Target Membership" esté marcado para el target principal
+
+3. **Ejecuta la aplicación**
+
+   ```bash
+   # Para Android
+   flutter run -d <device_id> --release
+
+   # Para iOS
+   flutter run -d <device_id> --release
+   ```
+
+4. **Prueba la funcionalidad AR**
+   - Abre la cámara y apunta a un código QR
+   - La aplicación cargará el modelo 3D correspondiente en realidad aumentada
+
+## 🛠️ Dependencias Principales
+
+La aplicación utiliza las siguientes dependencias principales:
+
+| Paquete                | Versión | Propósito                          |
+| ---------------------- | ------- | ---------------------------------- |
+| `flutter`              | ^3.19.0 | SDK principal de Flutter           |
+| `provider`             | ^6.1.1  | Gestión de estado                  |
+| `arkit_plugin`         | ^1.1.2  | Integración con ARKit para iOS     |
+| `model_viewer_plus`    | ^1.9.3  | Visualización de modelos 3D        |
+| `mobile_scanner`       | ^7.0.0  | Escaneo de códigos QR              |
+| `permission_handler`   | ^12.0.1 | Manejo de permisos del dispositivo |
+| `shared_preferences`   | ^2.2.2  | Almacenamiento local               |
+| `cached_network_image` | ^3.3.1  | Caché de imágenes                  |
+| `url_launcher`         | ^6.2.2  | Apertura de enlaces                |
+| `google_fonts`         | ^6.1.0  | Fuentes personalizadas             |
+| `flutter_svg`          | ^2.0.10 | Renderizado de SVG                 |
+| `http`                 | ^1.1.0  | Peticiones HTTP                    |
+
+### Instalación de Dependencias
+
+```bash
+flutter pub get
+```
+
+### Configuración de Entorno
+
+Copia el archivo de configuración de ejemplo y ajusta los valores según sea necesario:
+
+```bash
+cp lib/config/example_config.dart lib/config/app_config.dart
+```
+
 ## 🏗️ Estructura del Proyecto
 
 ```text
-lib/
-├── main.dart           # Punto de entrada de la aplicación
-├── app/               # Configuración de la aplicación
-├── models/            # Modelos de datos
-├── screens/           # Pantallas principales
-├── services/          # Lógica de negocio y servicios
-├── utils/             # Utilidades y helpers
-├── widgets/           # Componentes reutilizables
-└── assets/
-    ├── images/        # Imágenes estáticas
-    ├── species/       # Modelos 3D y datos de mariposas
-    └── translations/  # Archivos de internacionalización
-```
-
-## 🦋 Gestión de Especies
-
-La aplicación utiliza una estructura modular para gestionar las diferentes especies de mariposas. Cada especie se define en el directorio `assets/species/`.
-
-### Estructura de Archivos
-
-```text
-butterflyar/
-├── assets/
-│   ├── species/
-│   │   ├── monarca/
-│   │   │   ├── metadata.json
-│   │   │   ├── model.glb
-│   │   │   └── preview.png
-│   │   └── ...
-```
-
-### metadata.json
-
-Cada especie debe tener un archivo `metadata.json` con la siguiente estructura:
-
-```json
-{
-  "name": "Nombre Común",
-  "scientificName": "Nombre Científico",
-  "description": "Descripción detallada de la especie...",
-  "habitat": "Descripción del hábitat...",
-  "conservationStatus": "Estado de conservación...",
-  "model": "species/nombre_especie/model.glb",
-  "previewImage": "species/nombre_especie/preview.png"
-}
-```
-```
-
-## 👥 Contribución
-
-¡Las contribuciones son bienvenidas! Por favor, lee nuestras pautas de contribución antes de enviar un Pull Request.
-
-1. Haz un fork del repositorio
-2. Crea una rama para tu característica (`git checkout -b feature/AmazingFeature`)
-3. Haz commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Haz push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-### 🐛 Reportar Errores
-
-Por favor, reporta los errores [creando un nuevo issue](https://github.com/Manuekle/butterflyar/issues) con una descripción clara del problema, pasos para reproducirlo e información de tu entorno.
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más información.
-
-## 📧 Contacto
-
-- **Manuel** - [@tu_usuario](https://github.com/Manuekle)
-- **Correo electrónico**: tu@email.com
-- **Sitio web**: https://tusitio.com
-
-## 🙏 Agradecimientos
-
-- A todos los colaboradores que han ayudado a mejorar este proyecto
-- A la comunidad de Flutter por su increíble ecosistema
-- A los creadores de los paquetes de código abierto utilizados en este proyecto
-```
-
-### Ejemplo de `metadata.json`
-
-```json
-{
-  "name": "Mariposa Monarca",
-  "scientificName": "Danaus plexippus",
-  "imageAsset": "assets/images/monarca.png",
-  "modelAsset": "assets/models/mariposa.glb"
-}
-```
-
-### ¿Cómo agregar una mariposa?
-
-1. Crea una carpeta dentro de `species/` con el nombre de la mariposa (ejemplo: `species/morpho/`).
-2. Dentro, crea el archivo `metadata.json` como el ejemplo de arriba.
-3. Coloca la imagen en `assets/images/` y el modelo `.glb` en `assets/models/`.
-4. ¡Listo! La app los detectará automáticamente.
-
----
-
-## 🟦 Integración QR por área
-
-Puedes asociar cada área del sendero a una especie usando códigos QR. Así, el usuario escanea el QR en el área y la app muestra directamente la mariposa correspondiente en AR.
-
-### ¿Cómo funciona?
-
-- Imprime un QR para cada área, codificando el nombre o ID de la especie (ejemplo: `monarca`, `morpho`, `azulreal`).
-- El usuario escanea el QR desde la app.
-- La app detecta el código y carga automáticamente la experiencia AR de la mariposa asociada.
-
-### ¿Cómo implementarlo en la app?
-
-1. Agrega un botón "Escanear QR" en la pantalla principal o de selección.
-2. Al escanear, busca la especie cuyo nombre coincida con el QR y navega directo a la experiencia AR.
-3. Puedes generar QRs fácilmente en línea (por ejemplo, [https://www.qr-code-generator.com/](https://www.qr-code-generator.com/)).
-
-### Ejemplo de flujo QR
-
-1. El QR de la zona 1 contiene el texto: `monarca`.
-2. El usuario escanea el QR.
-3. La app busca la especie `monarca` y muestra la mariposa en RA.
-
----
-
-## 📁 Estructura del Proyecto
-
-```
 butterflyar/
 ├── android/           # Configuración específica de Android
 ├── ios/               # Configuración específica de iOS
@@ -309,23 +217,201 @@ butterflyar/
 └── pubspec.yaml       # Configuración de dependencias
 ```
 
+## 🦋 Gestión de Especies
+
+La aplicación utiliza una estructura modular para gestionar las diferentes especies de mariposas. Cada especie se define en el directorio `assets/species/` con sus respectivos recursos.
+
+### Estructura de Directorios
+
+```text
+assets/
+└── species/
+    ├── common_name_1/          # Nombre común en minúsculas y guiones
+    │   ├── metadata.json       # Metadatos de la especie
+    │   ├── model.glb           # Modelo 3D (formato GLB)
+    │   ├── preview.png         # Vista previa (512x512px)
+    │   ├── gallery/            # Galería de imágenes
+    │   │   ├── image1.jpg
+    │   │   └── image2.jpg
+    │   └── sounds/             # Sonidos opcionales
+    │       └── wing_flap.mp3
+    └── common_name_2/
+        └── ...
+```
+
+### metadata.json
+
+Cada especie debe tener un archivo `metadata.json` con la siguiente estructura:
+
+```json
+{
+  "id": "especie_unica",
+  "commonName": "Nombre Común",
+  "scientificName": "Nombre Científico",
+  "family": "Familia",
+  "description": "Descripción detallada...",
+  "habitat": "Descripción del hábitat...",
+  "conservationStatus": "LC|NT|VU|EN|CR|EW|EX",
+  "wingspan": "7-10 cm",
+  "diet": ["néctar", "fruta madura"],
+  "regions": ["América del Norte", "Centroamérica"],
+  "model": {
+    "path": "species/monarca/model.glb",
+    "scale": 1.0,
+    "rotation": [0, 0, 0],
+    "animation": "idle"
+  },
+  "gallery": ["species/monarca/gallery/1.jpg", "species/monarca/gallery/2.jpg"],
+  "sounds": {
+    "wingFlap": "species/monarca/sounds/wing_flap.mp3"
+  },
+  "facts": [
+    "Pueden viajar hasta 4,000 km durante su migración",
+    "Su coloración advierte a los depredadores de su toxicidad"
+  ],
+  "discovered": 1758,
+  "discoverer": "Carlos Linneo"
+}
+```
+
+## 🔍 Integración QR
+
+La aplicación soporta la asociación de códigos QR con especies específicas para una experiencia interactiva en exteriores.
+
+### Formato del Código QR
+
+```json
+{
+  "type": "butterfly_species",
+  "id": "monarca",
+  "location": {
+    "lat": 19.4326,
+    "lng": -99.1332,
+    "name": "Jardín Botánico"
+  }
+}
+```
+
+### Implementación en la Aplicación
+
+1. **Escaneo de Códigos QR**
+
+   - Usa la cámara del dispositivo para leer códigos QR
+   - Valida la estructura del JSON
+   - Carga automáticamente la especie correspondiente
+
+2. **Generación de Códigos**
+
+   ```dart
+   import 'package:qr_flutter/qr_flutter.dart';
+
+   QrImageView(
+     data: '{"type":"butterfly_species","id":"monarca"}',
+     version: QrVersions.auto,
+     size: 200.0,
+   );
+   ```
+
+3. **Manejo de Eventos**
+
+   - Registra cada escaneo en el historial
+   - Muestra información adicional basada en la ubicación
+   - Desbloquea logros y recompensas
+
+## 👥 Contribución
+
+¡Agradecemos tu interés en contribuir a ButterflyAR! Sigue estos pasos para contribuir:
+
+1. **Reportar Problemas**
+
+   - Revisa los [issues existentes](https://github.com/Manuekle/butterflyar/issues) antes de crear uno nuevo
+   - Usa plantillas de issue para errores y solicitudes de características
+   - Incluye pasos para reproducir, comportamiento esperado vs real, y capturas de pantalla cuando sea posible
+
+2. **Enviar Cambios**
+
+   ```bash
+   # 1. Haz fork del repositorio
+   git clone https://github.com/tu-usuario/butterflyar.git
+   cd butterflyar
+
+   # 2. Crea una rama para tu característica
+   git checkout -b feature/nueva-caracteristica
+
+   # 3. Haz commit de tus cambios
+   git commit -m "feat: añadir nueva característica"
+
+   # 4. Haz push a tu fork
+   git push origin feature/nueva-caracteristica
+   ```
+
+3. **Directrices de Código**
+
+   - Sigue el [estilo de código de Flutter](https://github.com/flutter/flutter/wiki/Style-guide-for-Flutter-repo)
+   - Escribe pruebas unitarias para nuevas funcionalidades
+   - Documenta los cambios en la API cuando sea necesario
+   - Mantén los commits atómicos y con mensajes descriptivos
+
+4. **Revisión de Código**
+   - Todo el código debe pasar las pruebas y el análisis estático
+   - Los PRs deben ser revisados por al menos un mantenedor
+   - Se pueden solicitar cambios antes de hacer merge
+
+### 🐛 Reportar Errores
+
+Por favor, reporta los errores [creando un nuevo issue](https://github.com/Manuekle/butterflyar/issues) con la siguiente información:
+
+- **Descripción clara** del problema
+- Pasos para **reproducir** el error
+- Comportamiento **esperado** vs **real**
+- Capturas de pantalla o grabaciones
+- Información del entorno (dispositivo, SO, versión de Flutter)
+- Código de ejemplo si es relevante
+
+## 📧 Contacto
+
+- **Manuel** - [@Manuekle](https://github.com/Manuekle)
+- **Correo electrónico**: <contacto@butterflyar.app>
+- **Sitio web**: [https://butterflyar.app](https://butterflyar.app)
+- **Twitter**: [@ButterflyARApp](https://twitter.com/ButterflyARApp)
+- **Instagram**: [@butterflyar.app](https://instagram.com/butterflyar.app)
+
+## 🙏 Agradecimientos
+
+Un especial agradecimiento a:
+
+- **Smurfit Kappa Cartón Colombia** - Por hacer posible este proyecto
+- **Biólogos de la Universidad del Cauca** - Por su valiosa contribución científica y por compartir su conocimiento sobre las mariposas
+- **Comunidad Flutter** - Por crear un ecosistema increíble
+- **Creadores de paquetes** - Por su trabajo en las dependencias utilizadas
+- **Usuarios** - Por probar la aplicación y proporcionar retroalimentación
+
 ---
 
-## ❓ Troubleshooting y Consejos
+## ❓ Preguntas Frecuentes y Soporte
 
-- Si no ves el modelo en RA:
+### Problemas Técnicos
+
+- **No se visualiza el modelo en Realidad Aumentada**
+  - Verifica que la cámara tenga los permisos necesarios
+  - Asegúrate de tener buena iluminación
+  - Intenta reiniciar la aplicación
+
+### Sobre el Proyecto
+
+- **¿Quiénes están detrás de este proyecto?**
+  Este proyecto es una colaboración entre Smurfit Kappa Cartón Colombia y la Universidad del Cauca, con el objetivo de promover la educación ambiental y la conservación de las mariposas nativas de la región del Cauca.
+
+### Contacto
+
+Para soporte técnico o más información, por favor contacta a:
+
+- **Smurfit Kappa Cartón Colombia**: [correo@skcc.com](mailto:correo@skcc.com)
+- **Universidad del Cauca - Departamento de Biología**: [biologia@unicauca.edu.co](mailto:biologia@unicauca.edu.co)
   - Verifica permisos de cámara.
   - El modelo `.glb` debe estar bien exportado y referenciado.
   - Usa dispositivos compatibles con ARCore (Android) o ARKit (iOS).
 - Para agregar más mariposas, repite el flujo de assets y modelo en el código.
 - Mantén los modelos optimizados para evitar caídas de rendimiento.
-
----
-
-## 📚 Recursos Útiles
-
-- [Documentación Flutter](https://docs.flutter.dev/)
-- [ar_flutter_plugin](https://pub.dev/packages/ar_flutter_plugin)
-- [Optimización de modelos glTF](https://github.com/KhronosGroup/glTF-Tutorials)
 
 ---
