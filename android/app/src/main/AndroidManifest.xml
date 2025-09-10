@@ -2,6 +2,9 @@
     <!-- Permisos necesarios para ModelViewer -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
+    <meta-data android:name="com.google.ar.core" android:value="optional" />
     
     <application
         android:label="ButterflyAR"
