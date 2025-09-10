@@ -55,29 +55,92 @@ class _HubScreenState extends State<HubScreen>
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    _buildHeader(context, theme),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header
+                            _buildHeader(context, theme),
 
-                    SizedBox(height: size.height * 0.05),
+                            SizedBox(height: size.height * 0.05),
 
-                    // Welcome Section
-                    _buildWelcomeSection(theme),
+                            // Welcome Section
+                            _buildWelcomeSection(theme),
 
-                    SizedBox(height: size.height * 0.08),
+                            SizedBox(height: size.height * 0.08),
 
-                    // Main Actions
-                    _buildMainActions(context, theme),
+                            // Main Actions
+                            _buildMainActions(context, theme),
 
-                    SizedBox(height: size.height * 0.05),
-                  ],
-                ),
-              ),
+                            const Spacer(),
+
+                            // Deveniac Logo and Text
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 40,
+                                  bottom: 20,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/icon/semillero/deveniac.png',
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.contain,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.image_not_supported,
+                                              size: 40,
+                                            );
+                                          },
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Semillero Deveniac',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: theme.colorScheme.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Version and year
+                                    Text(
+                                      'Versión 1.0.0 • 2025',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .textTheme
+                                                .bodySmall
+                                                ?.color
+                                                ?.withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -100,13 +163,21 @@ class _HubScreenState extends State<HubScreen>
                 height: 1.2,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 20),
+            Text(
+              'Fundación Universitaria de Popayán',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.5,
+                height: 1.2,
+              ),
+            ),
             Text(
               'Smurfit Kappa',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                letterSpacing: -0.5,
               ),
             ),
           ],

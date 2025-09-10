@@ -54,7 +54,7 @@ flutter:
   assets:
     - assets/icon/favicon.png
     - assets/images/
-    - assets/models/morpho.glb
+    - assets/icon/semillero/deveniac.png
     - assets/models/monarca.glb
     - ios/Runner/models.scnassets/
     - assets/sounds/

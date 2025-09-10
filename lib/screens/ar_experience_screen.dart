@@ -58,7 +58,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   double _modelRotationY = 0.0; // Rotación controlada por usuario
   double _idleFloatingOffset = 0.0; // Solo para animación de flotación idle
   static const double _fixedScale =
-      0.007; // ⭐ ESCALA FIJA BASADA EN TUS PRUEBAS
+      0.003; // ⭐ ESCALA FIJA BASADA EN TUS PRUEBAS
 
   // Referencias a nodos AR
   String? _currentARNodeName;
@@ -386,7 +386,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
           ARLogger.success('Vista ARKit creada');
           controller.onAddNodeForAnchor = _onAddAnchor;
         },
-        showFeaturePoints: true,
+        showFeaturePoints: false,
         showWorldOrigin: false,
         planeDetection: ARPlaneDetection.horizontal,
         autoenablesDefaultLighting: true,
@@ -741,6 +741,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                     'Descripción',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: Colors.grey[400],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -749,55 +750,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                     style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              _arSupport == ARPlatformSupport.arkit
-                                  ? LucideIcons.smartphone
-                                  : LucideIcons.box,
-                              color: theme.colorScheme.primary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Estado AR',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _arSupport == ARPlatformSupport.arkit
-                              ? 'ARKit disponible - Experiencia completa'
-                              : 'Modo vista previa 3D',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        if (_isModelLoaded) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            '✅ Modelo cargado correctamente',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.green[600],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),

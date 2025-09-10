@@ -21,7 +21,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     // Auto-navigate to hub after 5 seconds
     Future.delayed(const Duration(seconds: 5), _navigateToHub);
 
@@ -107,14 +107,27 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // Título principal
-                        Text(
-                          'ButterflyAR',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                            height: 1.2,
-                          ),
-                          textAlign: TextAlign.center,
+                        Column(
+                          children: [
+                            Text(
+                              'ButterflyAR',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                                height: 1.2,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Fundación Universitaria de Popayán',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 8),
@@ -137,7 +150,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           'Descubre el fascinante mundo de las mariposas\ncon realidad aumentada',
                           style: theme.textTheme.bodyLarge?.copyWith(
                             height: 1.6,
-                            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.9),
+                            color: theme.textTheme.bodyLarge?.color
+                                ?.withOpacity(0.9),
                             letterSpacing: 0.2,
                           ),
                           textAlign: TextAlign.center,
@@ -147,10 +161,45 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
 
-                // Bottom spacer
-                Expanded(
-                  flex: 1,
-                  child: const SizedBox(),
+                // Footer with logo and information
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  child: Column(
+                    children: [
+                      // Logo
+                      Image.asset(
+                        'assets/icon/semillero/deveniac.png',
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // Version and year
+                      Text(
+                        'Versión 1.0.0 • 2025',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(
+                            0.7,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Semillero name
+                      Text(
+                        'Semillero Deveniac',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
