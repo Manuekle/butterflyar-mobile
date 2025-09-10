@@ -13,6 +13,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 
 import 'package:arkit_plugin/arkit_plugin.dart';
+import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import 'package:butterflyar/models/butterfly.dart';
@@ -33,8 +34,9 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   late AnimationController _slideController;
   late Animation<Offset> _slide;
 
-  // Controller AR solo para iOS
-  ARKitController? _arkitController;
+  // Controllers AR
+  ARKitController? _arkitController; // iOS
+  ArCoreController? _arcoreController; // Android
 
   ARPlatformSupport _arSupport = ARPlatformSupport.none;
   bool _hasCameraPermission = false;
@@ -62,7 +64,8 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   // Referencias a nodos AR
   String? _currentARNodeName;
-  ARKitNode? _butterflyNode;
+  ARKitNode? _butterflyNode; // iOS
+  ArCoreNode? _butterflyARCoreNode; // Android
   late final Butterfly selectedButterfly = widget.butterfly;
 
   @override
@@ -98,12 +101,16 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     await _checkCameraPermission();
     await _playAmbientSound();
 
-    if (Platform.isIOS &&
-        _arSupport == ARPlatformSupport.arkit &&
-        _hasCameraPermission) {
-      ARLogger.success('Dispositivo iOS listo para AR');
+    if ((Platform.isIOS && _arSupport == ARPlatformSupport.arkit) ||
+        (Platform.isAndroid && _arSupport == ARPlatformSupport.arcore)) {
+      if (_hasCameraPermission) {
+        ARLogger.success('Dispositivo listo para AR nativa');
+      } else {
+        ARLogger.log('Sin permisos de cámara, usando modo vista previa');
+        setState(() => _isARMode = false);
+      }
     } else {
-      ARLogger.log('Usando modo vista previa 3D');
+      ARLogger.log('AR nativa no disponible, usando Model Viewer');
       setState(() => _isARMode = false);
     }
   }
@@ -117,7 +124,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       );
     } catch (e) {
       ARLogger.error('Error detectando soporte AR', e);
-      setState(() => _arSupport = ARPlatformSupport.none);
+      setState(() => _arSupport = ARPlatformSupport.modelViewer);
     }
   }
 
@@ -196,7 +203,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   // Esta función ahora solo es llamada para reintentar la carga.
   // La carga inicial se hará cuando se detecte un plano.
   Future<void> _loadButterflyModel() async {
-    // La lógica de carga inicial se movió a _onAddAnchor
+    // La lógica de carga inicial se movió a _onAddAnchor y _onARCorePlaneTap
   }
 
   // ==================== ANIMATIONS ====================
@@ -206,19 +213,29 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
     // Simplemente giramos el modelo lentamente
     _rotationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted && !_isModelSelected && _butterflyNode != null) {
+      if (mounted &&
+          !_isModelSelected &&
+          (_butterflyNode != null || _butterflyARCoreNode != null)) {
         _modelRotation += 0.005; // Rotación más lenta
-        _butterflyNode?.rotation = vector.Matrix3.rotationY(_modelRotation);
+        if (Platform.isIOS && _butterflyNode != null) {
+          _butterflyNode?.rotation = vector.Matrix3.rotationY(_modelRotation);
+        }
+        // Para ARCore se maneja diferente la rotación en _startIdleAnimationARCore
       }
     });
 
     // La animación de flotación se puede simplificar
     _floatingTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
-      if (mounted && !_isModelSelected && _butterflyNode != null) {
+      if (mounted &&
+          !_isModelSelected &&
+          (_butterflyNode != null || _butterflyARCoreNode != null)) {
         _floatingOffset += 0.05;
         final floatingY =
             math.sin(_floatingOffset) * 0.03; // Flotación más sutil
-        _butterflyNode?.position.y = floatingY;
+        if (Platform.isIOS && _butterflyNode != null) {
+          _butterflyNode?.position.y = floatingY;
+        }
+        // Para ARCore se maneja diferente la flotación en _startIdleAnimationARCore
       }
     });
   }
@@ -246,15 +263,15 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   }
 
   void _highlightButterfly() {
-    if (_butterflyNode != null) {
+    if (_butterflyNode != null || _butterflyARCoreNode != null) {
       // Solo cambiar el brillo/material, NO la escala
-      // Para ARKit podríamos añadir un efecto de brillo aquí si fuera necesario
+      // Para ARKit/ARCore podríamos añadir un efecto de brillo aquí si fuera necesario
       ARLogger.log('Mariposa seleccionada - lista para gestos de rotación');
     }
   }
 
   void _removeHighlight() {
-    if (_butterflyNode != null) {
+    if (_butterflyNode != null || _butterflyARCoreNode != null) {
       // Restaurar material original si fuera necesario
       ARLogger.log('Mariposa deseleccionada');
     }
@@ -262,7 +279,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   Future<void> _captureScreen() async {
     try {
-      if (_arkitController == null) return;
+      if (_arkitController == null && _arcoreController == null) return;
 
       // Mostrar retroalimentación táctil
       HapticFeedback.mediumImpact();
@@ -274,23 +291,35 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         ).showSnackBar(const SnackBar(content: Text('Capturando pantalla...')));
       }
 
-      // Tomar la captura de pantalla
-      final imageProvider = await _arkitController?.snapshot();
-      if (imageProvider == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo capturar la imagen')),
-          );
+      Uint8List? image;
+
+      // Tomar la captura de pantalla según la plataforma
+      if (Platform.isIOS && _arkitController != null) {
+        final imageProvider = await _arkitController?.snapshot();
+        if (imageProvider != null) {
+          image = await _imageProviderToUint8List(imageProvider);
         }
-        return;
+      } else if (Platform.isAndroid && _arcoreController != null) {
+        // ARCore plugin might have different snapshot method
+        // This is a placeholder - check the actual ARCore plugin documentation
+        try {
+          // Placeholder for ARCore screenshot
+          ARLogger.log('Captura de pantalla ARCore no implementada aún');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Captura en ARCore próximamente')),
+            );
+          }
+          return;
+        } catch (e) {
+          ARLogger.error('Error en captura ARCore', e);
+        }
       }
 
-      // Convertir ImageProvider a Uint8List
-      final image = await _imageProviderToUint8List(imageProvider);
       if (image == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al procesar la imagen')),
+            const SnackBar(content: Text('No se pudo capturar la imagen')),
           );
         }
         return;
@@ -355,7 +384,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   // ==================== GESTURE HANDLING ====================
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    if (!_isModelSelected || _butterflyNode == null) return;
+    if (!_isModelSelected) return;
 
     // Convertir el movimiento del dedo a rotación
     final sensitivity = 0.01;
@@ -365,8 +394,14 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     _modelRotationY += deltaX;
 
     // Aplicar la rotación al modelo manteniendo la escala fija
-    final rotationMatrix = vector.Matrix3.rotationY(_modelRotationY);
-    _butterflyNode?.rotation = rotationMatrix;
+    if (Platform.isIOS && _butterflyNode != null) {
+      final rotationMatrix = vector.Matrix3.rotationY(_modelRotationY);
+      _butterflyNode?.rotation = rotationMatrix;
+    } else if (Platform.isAndroid && _butterflyARCoreNode != null) {
+      // Para ARCore, la rotación se maneja diferente
+      // Esto es un placeholder - verificar documentación de ARCore plugin
+      // _butterflyARCoreNode?.rotation = vector.Vector4(0, _modelRotationY, 0, 1);
+    }
 
     // Opcional: Feedback háptico suave durante la rotación
     if (details.delta.dx.abs() > 2) {
@@ -395,15 +430,31 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     );
   }
 
+  Widget _buildARCoreView() {
+    return GestureDetector(
+      onTap: _handleTap,
+      onPanUpdate: _handlePanUpdate,
+      child: ArCoreView(
+        onArCoreViewCreated: (controller) {
+          _arcoreController = controller;
+          ARLogger.success('Vista ARCore creada');
+          controller.onPlaneDetected = _onARCorePlaneDetected;
+          controller.onPlaneTap = _onARCorePlaneTap;
+        },
+        enableTapRecognizer: true,
+      ),
+    );
+  }
+
   // ==================== AR VIEW BUILDERS END ====================
 
-  // ==================== AR LOGIC ====================
+  // ==================== AR LOGIC iOS ====================
 
   // ALTERNATIVA: COLOCAR EN EL PLANO DETECTADO
   void _onAddAnchor(ARKitAnchor anchor) {
     if (anchor is ARKitPlaneAnchor && !_isModelLoaded) {
       setState(() => _planeDetected = true);
-      ARLogger.log('✅ Plano horizontal detectado');
+      ARLogger.log('✅ Plano horizontal detectado en ARKit');
 
       final position = vector.Vector3(0, -0.1, -0.5); // Posición más cercana
       final nodeName = 'butterfly_${DateTime.now().millisecondsSinceEpoch}';
@@ -419,9 +470,87 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       _currentARNodeName = nodeName;
       setState(() => _isModelLoaded = true);
       _startIdleAnimation(); // Solo animación idle
-      ARLogger.success('✅ Mariposa cargada y colocada exitosamente');
+      ARLogger.success('✅ Mariposa cargada y colocada exitosamente en ARKit');
       _showSuccessSnackbar();
     }
+  }
+
+  // ==================== AR LOGIC Android ====================
+
+  void _onARCorePlaneDetected(ArCorePlane plane) {
+    setState(() => _planeDetected = true);
+    ARLogger.log('✅ Plano detectado en ARCore');
+  }
+
+  void _onARCorePlaneTap(List<ArCoreHitTestResult> hits) {
+    if (hits.isNotEmpty && !_isModelLoaded) {
+      final hit = hits.first;
+      _loadARCoreModel(hit);
+    }
+  }
+
+  Future<void> _loadARCoreModel(ArCoreHitTestResult hit) async {
+    try {
+      final position = hit.pose.translation;
+      final nodeName = 'butterfly_${DateTime.now().millisecondsSinceEpoch}';
+
+      _butterflyARCoreNode = ArCoreReferenceNode(
+        name: nodeName,
+        objectUrl: selectedButterfly.modelAssetAndroid!,
+        position: vector.Vector3(position.x, position.y, position.z),
+        scale: vector.Vector3.all(_fixedScale),
+      );
+
+      await _arcoreController?.addArCoreNode(_butterflyARCoreNode!);
+      _currentARNodeName = nodeName;
+      setState(() => _isModelLoaded = true);
+      _startIdleAnimationARCore();
+      ARLogger.success('✅ Mariposa cargada en ARCore');
+      _showSuccessSnackbar();
+    } catch (e) {
+      ARLogger.error('Error cargando modelo en ARCore', e);
+    }
+  }
+
+  void _startIdleAnimationARCore() {
+    _stopIdleAnimation();
+
+    _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) {
+      if (!mounted || _isModelSelected || _butterflyARCoreNode == null) {
+        return;
+      }
+
+      _idleFloatingOffset += 0.03;
+      final floatingY = math.sin(_idleFloatingOffset) * 0.02;
+
+      // Get current position and create new position with floating offset
+      final currentPos = _butterflyARCoreNode!.position;
+      if (currentPos != null) {
+        final newPosition = vector.Vector3(
+          currentPos.value.x,
+          currentPos.value.y + floatingY,
+          currentPos.value.z,
+        );
+
+        // Create a new node at the updated position
+        final newNode = ArCoreReferenceNode(
+          name: _butterflyARCoreNode!.name,
+          objectUrl: selectedButterfly.modelAssetAndroid!,
+          position: newPosition,
+          scale: _butterflyARCoreNode!.scale?.value ?? vector.Vector3.all(1.0),
+          rotation:
+              _butterflyARCoreNode!.rotation?.value ??
+              vector.Vector4(0, 0, 0, 1),
+        );
+
+        // Remove the old node and add the new one
+        _arcoreController?.removeNode(nodeName: _butterflyARCoreNode!.name);
+        _arcoreController?.addArCoreNode(newNode);
+        _butterflyARCoreNode = newNode;
+      }
+    });
   }
 
   // ==================== AR LOGIC END ====================
@@ -431,21 +560,26 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   void _startIdleAnimation() {
     _stopIdleAnimation();
 
-    // Solo flotación suave cuando NO está seleccionada
-    _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
-      timer,
-    ) {
-      if (mounted && !_isModelSelected && _butterflyNode != null) {
-        _idleFloatingOffset += 0.03;
-        final floatingY =
-            math.sin(_idleFloatingOffset) * 0.02; // Flotación muy sutil
-        _butterflyNode?.position = vector.Vector3(
-          _butterflyNode!.position.x,
-          -0.1 + floatingY, // Mantener posición base + flotación
-          _butterflyNode!.position.z,
-        );
-      }
-    });
+    if (Platform.isIOS && _butterflyNode != null) {
+      // Solo flotación suave cuando NO está seleccionada para ARKit
+      _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
+        timer,
+      ) {
+        if (mounted && !_isModelSelected && _butterflyNode != null) {
+          _idleFloatingOffset += 0.03;
+          final floatingY =
+              math.sin(_idleFloatingOffset) * 0.02; // Flotación muy sutil
+          _butterflyNode?.position = vector.Vector3(
+            _butterflyNode!.position.x,
+            -0.1 + floatingY, // Mantener posición base + flotación
+            _butterflyNode!.position.z,
+          );
+        }
+      });
+    } else if (Platform.isAndroid && _butterflyARCoreNode != null) {
+      // Para ARCore usar el método específico
+      _startIdleAnimationARCore();
+    }
   }
 
   void _stopIdleAnimation() {
@@ -494,6 +628,8 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
               const SizedBox(height: 8),
               Text(
                 _arSupport == ARPlatformSupport.arkit
+                    ? 'Toca el botón AR para realidad aumentada'
+                    : _arSupport == ARPlatformSupport.arcore
                     ? 'Toca el botón AR para realidad aumentada'
                     : 'AR no soportado en este dispositivo',
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
@@ -611,16 +747,42 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       _currentScale = (_currentScale * 0.8).clamp(0.001, 1.0); // Reducir 20%
     }
 
-    _butterflyNode?.scale = vector.Vector3.all(_currentScale);
+    // Create a new node with the updated scale
+    final rotation = _butterflyNode!.eulerAngles;
+    final rotationVector = vector.Vector4(
+      rotation.x,
+      rotation.y,
+      rotation.z,
+      1.0,
+    );
+
+    final newNode = ARKitNode(
+      geometry: _butterflyNode!.geometry,
+      position: _butterflyNode!.position,
+      rotation: rotationVector,
+      scale: vector.Vector3.all(_currentScale),
+      name: _butterflyNode!.name,
+    );
+
+    // Remove the old node by name and add the new one
+    if (_butterflyNode?.name != null) {
+      _arkitController?.remove(_butterflyNode!.name!);
+    }
+
+    _arkitController?.add(newNode);
+    _butterflyNode = newNode;
+
     ARLogger.log('Nueva escala: $_currentScale');
 
-    // Mostrar la escala actual
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Escala: ${_currentScale.toStringAsFixed(3)}'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    // Show current scale
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Escala: ${_currentScale.toStringAsFixed(3)}'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
   }
 
   Widget _buildFloatingButton({
@@ -778,19 +940,30 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                       _isARMode &&
                       _arSupport == ARPlatformSupport.arkit
                   ? _buildARView()
+                  : Platform.isAndroid &&
+                        _isARMode &&
+                        _arSupport == ARPlatformSupport.arcore
+                  ? _buildARCoreView()
                   : _buildStaticView(),
 
             _buildTopControls(),
 
-            if (Platform.isIOS &&
-                _isARMode &&
-                _arSupport == ARPlatformSupport.arkit)
+            if ((Platform.isIOS &&
+                    _isARMode &&
+                    _arSupport == ARPlatformSupport.arkit) ||
+                (Platform.isAndroid &&
+                    _isARMode &&
+                    _arSupport == ARPlatformSupport.arcore))
               _buildARControls(),
 
-            if (Platform.isIOS &&
-                _isARMode &&
-                _arSupport == ARPlatformSupport.arkit &&
-                !_isModelLoaded)
+            if ((Platform.isIOS &&
+                    _isARMode &&
+                    _arSupport == ARPlatformSupport.arkit &&
+                    !_isModelLoaded) ||
+                (Platform.isAndroid &&
+                    _isARMode &&
+                    _arSupport == ARPlatformSupport.arcore &&
+                    !_isModelLoaded))
               _buildARInstructions(),
           ],
         ),
@@ -815,7 +988,8 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
             onPressed: () => Navigator.pop(context),
             tooltip: 'Atrás',
           ),
-          if (Platform.isIOS && _arSupport == ARPlatformSupport.arkit)
+          if ((_arSupport == ARPlatformSupport.arkit && Platform.isIOS) ||
+              (_arSupport == ARPlatformSupport.arcore && Platform.isAndroid))
             _buildFloatingButton(
               icon: _isARMode ? LucideIcons.image : LucideIcons.box,
               onPressed: () {
@@ -909,7 +1083,9 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                       ? (_isModelLoaded
                             ? (_isModelSelected
                                   ? 'Rota con el dedo para ver todos los ángulos'
-                                  : 'Toca para activar el modo rotación')
+                                  : Platform.isIOS
+                                  ? 'Toca para activar el modo rotación'
+                                  : 'Toca el plano para colocar la mariposa')
                             : 'Preparando experiencia AR...')
                       : 'Mueve tu dispositivo lentamente',
                   style: Theme.of(
@@ -972,6 +1148,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     _audioPlayer?.dispose();
     _slideController.dispose();
     _arkitController?.dispose();
+    _arcoreController?.dispose(); // Agregar disposal de ARCore
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -982,7 +1159,8 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       case AppLifecycleState.resumed:
         ARLogger.log('App resumed - rechecking permissions');
         _checkCameraPermission();
-        if (_arkitController != null && !_isModelLoaded) {
+        if ((_arkitController != null || _arcoreController != null) &&
+            !_isModelLoaded) {
           // No llamar _loadButterflyModel ya que usamos auto-detección de planos
         }
         _playAmbientSound();

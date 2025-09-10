@@ -240,7 +240,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         _buildListTile(
           context: context,
           icon: LucideIcons.user,
-          title: 'Coordinadora del proyecto',
+          title: 'Coordinadora de prácticas empresariales',
           subtitle: 'Mag. Daniela Gutiérrez',
           onTap: () => _showInfoDialog(
             context,
