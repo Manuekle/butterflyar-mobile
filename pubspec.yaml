@@ -32,9 +32,13 @@ dependencies:
   lucide_icons_flutter: ^3.0.3
   url_launcher: ^6.3.2
   device_info_plus: ^11.1.0
-  image_gallery_saver: ^2.0.3
+  gal: ^2.3.2
   image: ^4.5.4
-  arcore_flutter_plugin: ^0.1.0 # Para Android ARCore
+  # ⭐ USAR VERSIÓN FORK MÁS ESTABLE DE ARCORE
+  arcore_flutter_plugin:
+    git:
+      url: https://github.com/giandifra/arcore_flutter_plugin.git
+      ref: master
   flutter_svg: ^2.2.1
 
 dev_dependencies:

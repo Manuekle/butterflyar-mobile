@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart'; // ⭐ CAMBIO: image_gallery_saver por gal
 
 import 'package:arkit_plugin/arkit_plugin.dart';
 import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
@@ -325,14 +325,20 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         return;
       }
 
-      // Solicitar permiso de almacenamiento si es necesario
-      if (Platform.isAndroid || Platform.isIOS) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
+      // ⭐ CAMBIO IMPORTANTE: Verificar si tenemos acceso a la galería antes de intentar guardar
+      bool hasAccess = await Gal.hasAccess();
+
+      if (!hasAccess) {
+        // Solicitar permisos usando gal
+        hasAccess = await Gal.requestAccess();
+
+        if (!hasAccess) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Se necesita permiso para guardar la imagen'),
+                content: Text(
+                  'Se necesita permiso para guardar la imagen en la galería',
+                ),
               ),
             );
           }
@@ -340,31 +346,44 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         }
       }
 
-      // Guardar la imagen en la galería
-      final result = await ImageGallerySaver.saveImage(
+      // ⭐ CAMBIO: Usar Gal.putImageBytes en lugar de ImageGallerySaver.saveImage
+      await Gal.putImageBytes(
         image,
-        quality: 100,
-        name: 'butterfly_ar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        album: 'ButterflyAR', // Opcional: crear un álbum específico para la app
       );
 
-      if (result['isSuccess'] == true) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Foto guardada en la galería!')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al guardar la foto')),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Foto guardada en la galería!')),
+        );
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Error al guardar la foto';
+
+        // ⭐ CAMBIO: Manejar errores específicos de Gal
+        if (e is GalException) {
+          switch (e.type) {
+            case GalExceptionType.accessDenied:
+              errorMessage = 'Acceso denegado a la galería';
+              break;
+            case GalExceptionType.notEnoughSpace:
+              errorMessage = 'No hay suficiente espacio en el dispositivo';
+              break;
+            case GalExceptionType.notSupportedFormat:
+              errorMessage = 'Formato de imagen no soportado';
+              break;
+            case GalExceptionType.unexpected:
+            default:
+              errorMessage =
+                  'Error inesperado: ${e.platformException?.message ?? 'Desconocido'}';
+              break;
+          }
+        }
+
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
       ARLogger.error('Error en _captureScreen', e);
     }

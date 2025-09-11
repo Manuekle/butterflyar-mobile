@@ -32,10 +32,34 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // ⭐ CONFIGURACIÓN RELEASE MEJORADA
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false // Desactivar minificación para evitar problemas con ARCore
+            isShrinkResources = false // Desactivar shrink de recursos
+            
+            // ⭐ AÑADIR REGLAS DE PROGUARD
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
+
+    // ⭐ AÑADIR CONFIGURACIÓN PARA ARCore
+    packagingOptions {
+        pickFirst("**/libc++_shared.so")
+        pickFirst("**/libjsc.so")
+        pickFirst("**/libarcore_sdk_c.so")
+    }
+
+    // ⭐ CONFIGURACIÓN LINT
+    lintOptions {
+        disable("InvalidPackage")
+        isCheckReleaseBuilds = false
     }
 }
 
