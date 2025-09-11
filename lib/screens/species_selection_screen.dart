@@ -247,7 +247,7 @@ class _SpeciesSelectionScreenState extends State<SpeciesSelectionScreen>
                       butterfly.name,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
+                        letterSpacing: -0.5,
                         height: 1.2,
                       ),
                       maxLines: 1,
@@ -260,7 +260,7 @@ class _SpeciesSelectionScreenState extends State<SpeciesSelectionScreen>
                         fontStyle: FontStyle.italic,
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
+                        letterSpacing: -0.5,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

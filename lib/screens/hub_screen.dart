@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HubScreen extends StatefulWidget {
   const HubScreen({super.key});
@@ -83,55 +84,96 @@ class _HubScreenState extends State<HubScreen>
 
                             const Spacer(),
 
-                            // Deveniac Logo and Text
-                            Center(
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 40,
-                                  bottom: 20,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      'assets/icon/semillero/deveniac.png',
-                                      width: 40,
-                                      height: 40,
-                                      fit: BoxFit.contain,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return const Icon(
-                                              Icons.image_not_supported,
-                                              size: 40,
-                                            );
-                                          },
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Semillero Deveniac',
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            color: theme.colorScheme.primary,
-                                            fontWeight: FontWeight.w600,
+                            const Spacer(),
+
+                            // Institution Logos
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 30),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // Logos row
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Smurfit Logo
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Container(
+                                          width: 100,
+                                          height: 50,
+                                          child: SvgPicture.asset(
+                                            'assets/icon/smurtfit/smurtfit.svg',
+                                            colorFilter: ColorFilter.mode(
+                                              theme.brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              BlendMode.srcIn,
+                                            ),
+                                            fit: BoxFit.contain,
                                           ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Version and year
-                                    Text(
-                                      'Versión 1.0.0 • 2025',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .textTheme
-                                                .bodySmall
-                                                ?.color
-                                                ?.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+
+                                      // FUP Logo
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Container(
+                                          width: 100,
+                                          height: 50,
+                                          child: SvgPicture.asset(
+                                            'assets/icon/universidad/fup.svg',
+                                            colorFilter: ColorFilter.mode(
+                                              theme.brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              BlendMode.srcIn,
+                                            ),
+                                            fit: BoxFit.contain,
                                           ),
+                                        ),
+                                      ),
+
+                                      // Deveniac Logo
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        child: Container(
+                                          width: 40,
+                                          height: 40,
+                                          child: Image.asset(
+                                            'assets/icon/semillero/deveniac.png',
+                                            fit: BoxFit.contain,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return const Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 40,
+                                                  );
+                                                },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Version and year
+                                  Text(
+                                    'Versión 1.0.0 • 2025',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.textTheme.bodySmall?.color
+                                          ?.withOpacity(0.7),
                                     ),
-                                  ],
-                                ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -163,17 +205,8 @@ class _HubScreenState extends State<HubScreen>
                 height: 1.2,
               ),
             ),
-            const SizedBox(height: 20),
             Text(
-              'Fundación Universitaria de Popayán',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.5,
-                height: 1.2,
-              ),
-            ),
-            Text(
-              'Smurfit Kappa',
+              'Smurfit Kappa cartón Colombia',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,
@@ -221,7 +254,7 @@ class _HubScreenState extends State<HubScreen>
           style: theme.textTheme.bodyLarge?.copyWith(
             height: 1.6,
             color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.9),
-            letterSpacing: 0.2,
+            letterSpacing: -0.5,
             fontSize: 14,
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -123,22 +124,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               'Fundación Universitaria de Popayán',
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.5,
+                                fontWeight: FontWeight.w700,
                               ),
                               textAlign: TextAlign.center,
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 8),
-
+                        const SizedBox(height: 4),
                         // Subtítulo
                         Text(
-                          'Smurfit Kappa',
+                          'Smurfit Kappa cartón Colombia',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
+                            letterSpacing: -0.5,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -150,9 +151,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           'Descubre el fascinante mundo de las mariposas\ncon realidad aumentada',
                           style: theme.textTheme.bodyLarge?.copyWith(
                             height: 1.6,
-                            color: theme.textTheme.bodyLarge?.color
-                                ?.withOpacity(0.9),
-                            letterSpacing: 0.2,
+                            color: theme.textTheme.bodyLarge?.color?.withValues(
+                              alpha: 0.9,
+                            ),
+                            letterSpacing: -0.5,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -161,25 +163,74 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
 
-                // Footer with logo and information
+                // Footer with logos and information
                 Padding(
                   padding: const EdgeInsets.only(bottom: 32),
                   child: Column(
                     children: [
-                      // Logo
-                      Image.asset(
-                        'assets/icon/semillero/deveniac.png',
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                          );
-                        },
+                      // Logos row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Smurfit Logo
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Container(
+                              width: 100,
+                              height: 50,
+                              child: SvgPicture.asset(
+                                'assets/icon/smurtfit/smurtfit.svg',
+                                colorFilter: ColorFilter.mode(
+                                  theme.brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                  BlendMode.srcIn,
+                                ),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+
+                          // FUP Logo
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Container(
+                              width: 100,
+                              height: 50,
+                              child: SvgPicture.asset(
+                                'assets/icon/universidad/fup.svg',
+                                colorFilter: ColorFilter.mode(
+                                  theme.brightness == Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                  BlendMode.srcIn,
+                                ),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+
+                          // Deveniac Logo
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              child: Image.asset(
+                                'assets/icon/semillero/deveniac.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.image_not_supported,
+                                    size: 40,
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       // Version and year
                       Text(
                         'Versión 1.0.0 • 2025',
@@ -188,15 +239,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             0.7,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Semillero name
-                      Text(
-                        'Semillero Deveniac',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
