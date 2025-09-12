@@ -1,16 +1,17 @@
-// lib/screens/ar_experience_screen.dart
+// lib/screens/ar_experience_screen.dart - Versión híbrida corregida
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:vector_math/vector_math_64.dart' as vector;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:gal/gal.dart'; // ⭐ CAMBIO: image_gallery_saver por gal
+import 'package:gal/gal.dart';
 
 import 'package:arkit_plugin/arkit_plugin.dart';
 import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
@@ -48,19 +49,10 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   bool _planeDetected = false;
 
   // Variables para animaciones y control del modelo
-  Timer? _rotationTimer;
-  Timer? _floatingTimer;
-  double _modelRotation = 0.0;
-  double _floatingOffset = 0.0;
-
-  double _currentScale = 0.02; // Variable para la escala actual
-
-  // Variables para animaciones y control del modelo
-  Timer? _idleAnimationTimer; // Solo animación idle
-  double _modelRotationY = 0.0; // Rotación controlada por usuario
-  double _idleFloatingOffset = 0.0; // Solo para animación de flotación idle
-  static const double _fixedScale =
-      0.003; // ⭐ ESCALA FIJA BASADA EN TUS PRUEBAS
+  Timer? _idleAnimationTimer;
+  double _modelRotationY = 0.0;
+  double _idleFloatingOffset = 0.0;
+  static const double _fixedScale = 0.003; // Escala fija optimizada
 
   // Referencias a nodos AR
   String? _currentARNodeName;
@@ -101,16 +93,32 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     await _checkCameraPermission();
     await _playAmbientSound();
 
-    if ((Platform.isIOS && _arSupport == ARPlatformSupport.arkit) ||
-        (Platform.isAndroid && _arSupport == ARPlatformSupport.arcore)) {
-      if (_hasCameraPermission) {
-        ARLogger.success('Dispositivo listo para AR nativa');
-      } else {
-        ARLogger.log('Sin permisos de cámara, usando modo vista previa');
-        setState(() => _isARMode = false);
-      }
+    // Verificar si el dispositivo soporta AR nativo
+    final isARSupported =
+        (Platform.isIOS && _arSupport == ARPlatformSupport.arkit) ||
+        (Platform.isAndroid && _arSupport == ARPlatformSupport.arcore);
+
+    // Verificar si tenemos los modelos necesarios para la plataforma
+    final hasRequiredModel =
+        (Platform.isIOS && selectedButterfly.hasIOSModel) ||
+        (Platform.isAndroid && selectedButterfly.hasAndroidModel);
+
+    // Verificar condiciones para usar AR
+    if (isARSupported && hasRequiredModel && _hasCameraPermission) {
+      ARLogger.success('Dispositivo listo para AR nativa');
+      setState(() => _isARMode = true);
     } else {
-      ARLogger.log('AR nativa no disponible, usando Model Viewer');
+      // Mostrar razón específica del fallback a no-AR
+      if (!isARSupported) {
+        ARLogger.log('AR nativa no disponible en este dispositivo');
+      } else if (!hasRequiredModel) {
+        ARLogger.log('No se encontró el modelo 3D para esta plataforma');
+      } else if (!_hasCameraPermission) {
+        ARLogger.log('Se requieren permisos de cámara para la experiencia AR');
+      }
+
+      // Usar vista sin AR
+      ARLogger.log('Usando modo vista previa sin AR');
       setState(() => _isARMode = false);
     }
   }
@@ -200,49 +208,79 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   // ==================== AR MODEL LOADING ====================
 
-  // Esta función ahora solo es llamada para reintentar la carga.
-  // La carga inicial se hará cuando se detecte un plano.
-  Future<void> _loadButterflyModel() async {
-    // La lógica de carga inicial se movió a _onAddAnchor y _onARCorePlaneTap
+  /// ⭐ CARGA MODELO SCN EN ARKIT (iOS)
+  void _onAddAnchor(ARKitAnchor anchor) {
+    if (anchor is ARKitPlaneAnchor && !_isModelLoaded) {
+      setState(() => _planeDetected = true);
+      ARLogger.log('✅ Plano horizontal detectado en ARKit');
+
+      final modelPath = selectedButterfly.modelAssetForARKit;
+      if (modelPath == null || modelPath.isEmpty) {
+        ARLogger.error('Sin modelo SCN para iOS');
+        return;
+      }
+
+      final position = vector.Vector3(0, -0.1, -0.5);
+      final nodeName = 'butterfly_${DateTime.now().millisecondsSinceEpoch}';
+
+      // ⭐ USAR SCN PARA ARKIT
+      _butterflyNode = ARKitReferenceNode(
+        url: modelPath, // Archivo SCN
+        scale: vector.Vector3.all(_fixedScale),
+        name: nodeName,
+        position: position,
+      );
+
+      _arkitController?.add(_butterflyNode!);
+      _currentARNodeName = nodeName;
+      setState(() => _isModelLoaded = true);
+      _startIdleAnimation();
+      ARLogger.success('✅ Modelo SCN cargado exitosamente en ARKit');
+      _showSuccessSnackbar();
+    }
   }
 
-  // ==================== ANIMATIONS ====================
-
-  void _startButterflyAnimations() {
-    _stopAutoAnimations();
-
-    // Simplemente giramos el modelo lentamente
-    _rotationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted &&
-          !_isModelSelected &&
-          (_butterflyNode != null || _butterflyARCoreNode != null)) {
-        _modelRotation += 0.005; // Rotación más lenta
-        if (Platform.isIOS && _butterflyNode != null) {
-          _butterflyNode?.rotation = vector.Matrix3.rotationY(_modelRotation);
-        }
-        // Para ARCore se maneja diferente la rotación en _startIdleAnimationARCore
-      }
-    });
-
-    // La animación de flotación se puede simplificar
-    _floatingTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
-      if (mounted &&
-          !_isModelSelected &&
-          (_butterflyNode != null || _butterflyARCoreNode != null)) {
-        _floatingOffset += 0.05;
-        final floatingY =
-            math.sin(_floatingOffset) * 0.03; // Flotación más sutil
-        if (Platform.isIOS && _butterflyNode != null) {
-          _butterflyNode?.position.y = floatingY;
-        }
-        // Para ARCore se maneja diferente la flotación en _startIdleAnimationARCore
-      }
-    });
+  /// ⭐ CARGA MODELO GLB EN ARCORE (Android)
+  void _onARCorePlaneDetected(ArCorePlane plane) {
+    setState(() => _planeDetected = true);
+    ARLogger.log('✅ Plano detectado en ARCore');
   }
 
-  void _stopAutoAnimations() {
-    _rotationTimer?.cancel();
-    _floatingTimer?.cancel();
+  void _onARCorePlaneTap(List<ArCoreHitTestResult> hits) {
+    if (hits.isNotEmpty && !_isModelLoaded) {
+      final hit = hits.first;
+      _loadARCoreModel(hit);
+    }
+  }
+
+  Future<void> _loadARCoreModel(ArCoreHitTestResult hit) async {
+    try {
+      final modelPath = selectedButterfly.modelAssetForARCore;
+      if (modelPath == null || modelPath.isEmpty) {
+        ARLogger.error('Sin modelo GLB para Android ARCore');
+        return;
+      }
+
+      final position = hit.pose.translation;
+      final nodeName = 'butterfly_${DateTime.now().millisecondsSinceEpoch}';
+
+      // ⭐ USAR GLB PARA ARCORE
+      _butterflyARCoreNode = ArCoreReferenceNode(
+        name: nodeName,
+        objectUrl: modelPath, // Archivo GLB
+        position: vector.Vector3(position.x, position.y, position.z),
+        scale: vector.Vector3.all(_fixedScale),
+      );
+
+      await _arcoreController?.addArCoreNode(_butterflyARCoreNode!);
+      _currentARNodeName = nodeName;
+      setState(() => _isModelLoaded = true);
+      _startIdleAnimationARCore();
+      ARLogger.success('✅ Modelo GLB cargado exitosamente en ARCore');
+      _showSuccessSnackbar();
+    } catch (e) {
+      ARLogger.error('Error cargando modelo GLB en ARCore', e);
+    }
   }
 
   // ==================== USER INTERACTIONS ====================
@@ -264,27 +302,225 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   void _highlightButterfly() {
     if (_butterflyNode != null || _butterflyARCoreNode != null) {
-      // Solo cambiar el brillo/material, NO la escala
-      // Para ARKit/ARCore podríamos añadir un efecto de brillo aquí si fuera necesario
       ARLogger.log('Mariposa seleccionada - lista para gestos de rotación');
     }
   }
 
   void _removeHighlight() {
     if (_butterflyNode != null || _butterflyARCoreNode != null) {
-      // Restaurar material original si fuera necesario
       ARLogger.log('Mariposa deseleccionada');
     }
   }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    if (!_isModelSelected) return;
+
+    final sensitivity = 0.01;
+    final deltaX = details.delta.dx * sensitivity;
+    _modelRotationY += deltaX;
+
+    if (Platform.isIOS && _butterflyNode != null) {
+      final rotationMatrix = vector.Matrix3.rotationY(_modelRotationY);
+      _butterflyNode?.rotation = rotationMatrix;
+    } else if (Platform.isAndroid && _butterflyARCoreNode != null) {
+      // Para ARCore, la rotación se maneja diferente
+    }
+
+    if (details.delta.dx.abs() > 2) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  // ==================== ANIMATIONS ====================
+
+  void _startIdleAnimation() {
+    _stopIdleAnimation();
+
+    if (Platform.isIOS && _butterflyNode != null) {
+      _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
+        timer,
+      ) {
+        if (mounted && !_isModelSelected && _butterflyNode != null) {
+          _idleFloatingOffset += 0.03;
+          final floatingY = math.sin(_idleFloatingOffset) * 0.02;
+          _butterflyNode?.position = vector.Vector3(
+            _butterflyNode!.position.x,
+            -0.1 + floatingY,
+            _butterflyNode!.position.z,
+          );
+        }
+      });
+    } else if (Platform.isAndroid && _butterflyARCoreNode != null) {
+      _startIdleAnimationARCore();
+    }
+  }
+
+  void _startIdleAnimationARCore() {
+    _stopIdleAnimation();
+
+    _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) {
+      if (!mounted || _isModelSelected || _butterflyARCoreNode == null) {
+        return;
+      }
+
+      _idleFloatingOffset += 0.03;
+      final floatingY = math.sin(_idleFloatingOffset) * 0.02;
+
+      final currentPos = _butterflyARCoreNode!.position;
+      if (currentPos != null) {
+        final newPosition = vector.Vector3(
+          currentPos.value.x,
+          currentPos.value.y + floatingY,
+          currentPos.value.z,
+        );
+
+        final modelPath = selectedButterfly.modelAssetForARCore;
+        if (modelPath != null) {
+          final newNode = ArCoreReferenceNode(
+            name: _butterflyARCoreNode!.name,
+            objectUrl: modelPath, // GLB para ARCore
+            position: newPosition,
+            scale:
+                _butterflyARCoreNode!.scale?.value ?? vector.Vector3.all(1.0),
+            rotation:
+                _butterflyARCoreNode!.rotation?.value ??
+                vector.Vector4(0, 0, 0, 1),
+          );
+
+          _arcoreController?.removeNode(nodeName: _butterflyARCoreNode!.name);
+          _arcoreController?.addArCoreNode(newNode);
+          _butterflyARCoreNode = newNode;
+        }
+      }
+    });
+  }
+
+  void _stopIdleAnimation() {
+    _idleAnimationTimer?.cancel();
+  }
+
+  // ==================== AR VIEW BUILDERS ====================
+
+  Widget _buildARView() {
+    return GestureDetector(
+      onTap: _handleTap,
+      onPanUpdate: _handlePanUpdate,
+      child: ARKitSceneView(
+        onARKitViewCreated: (controller) {
+          _arkitController = controller;
+          ARLogger.success('Vista ARKit creada');
+          controller.onAddNodeForAnchor = _onAddAnchor;
+        },
+        showFeaturePoints: false,
+        showWorldOrigin: false,
+        planeDetection: ARPlaneDetection.horizontal,
+        autoenablesDefaultLighting: true,
+        debug: false,
+      ),
+    );
+  }
+
+  Widget _buildARCoreView() {
+    return GestureDetector(
+      onTap: _handleTap,
+      onPanUpdate: _handlePanUpdate,
+      child: ArCoreView(
+        onArCoreViewCreated: (controller) {
+          _arcoreController = controller;
+          ARLogger.success('Vista ARCore creada');
+          controller.onPlaneDetected = _onARCorePlaneDetected;
+          controller.onPlaneTap = _onARCorePlaneTap;
+        },
+        enableTapRecognizer: true,
+      ),
+    );
+  }
+
+  /// ⭐ VISTA ESTÁTICA MEJORADA CON MODEL VIEWER
+  Widget _buildStaticView() {
+    // Usar GLB para Model Viewer (mejor compatibilidad)
+    final modelPath = selectedButterfly.modelAssetForModelViewer;
+
+    final Widget modelContent = (modelPath?.isNotEmpty == true)
+        ? Expanded(
+            child: ModelViewer(
+              backgroundColor: Colors.transparent,
+              src: modelPath!, // GLB para Model Viewer
+              alt: "Modelo 3D de ${selectedButterfly.name}",
+              ar: false, // ⭐ DESHABILITADO para evitar conflictos
+              autoRotate: true,
+              cameraControls: true,
+              autoPlay: true,
+              loading: Loading.eager,
+              disableZoom: false,
+              // ⭐ CONFIGURACIONES ADICIONALES
+              interactionPrompt: InteractionPrompt.none,
+              disablePan: false,
+            ),
+          )
+        : _buildNoModelAvailable();
+
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(
+            _isDayBackground
+                ? 'assets/backgrounds/day.png'
+                : 'assets/backgrounds/night.png',
+          ),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [modelContent],
+            ),
+          ),
+          _buildStaticViewControls(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoModelAvailable() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(LucideIcons.box, size: 64, color: Colors.white.withOpacity(0.7)),
+        const SizedBox(height: 16),
+        Text(
+          'Modelo 3D no disponible',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          Platform.isIOS
+              ? 'Necesita archivo SCN para ARKit'
+              : 'Necesita archivo GLB para ARCore',
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  // ==================== UI COMPONENTS ====================
 
   Future<void> _captureScreen() async {
     try {
       if (_arkitController == null && _arcoreController == null) return;
 
-      // Mostrar retroalimentación táctil
       HapticFeedback.mediumImpact();
 
-      // Mostrar mensaje de carga
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -293,27 +529,19 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
       Uint8List? image;
 
-      // Tomar la captura de pantalla según la plataforma
       if (Platform.isIOS && _arkitController != null) {
         final imageProvider = await _arkitController?.snapshot();
         if (imageProvider != null) {
           image = await _imageProviderToUint8List(imageProvider);
         }
       } else if (Platform.isAndroid && _arcoreController != null) {
-        // ARCore plugin might have different snapshot method
-        // This is a placeholder - check the actual ARCore plugin documentation
-        try {
-          // Placeholder for ARCore screenshot
-          ARLogger.log('Captura de pantalla ARCore no implementada aún');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Captura en ARCore próximamente')),
-            );
-          }
-          return;
-        } catch (e) {
-          ARLogger.error('Error en captura ARCore', e);
+        ARLogger.log('Captura de pantalla ARCore no implementada aún');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Captura en ARCore próximamente')),
+          );
         }
+        return;
       }
 
       if (image == null) {
@@ -325,11 +553,9 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         return;
       }
 
-      // ⭐ CAMBIO IMPORTANTE: Verificar si tenemos acceso a la galería antes de intentar guardar
       bool hasAccess = await Gal.hasAccess();
 
       if (!hasAccess) {
-        // Solicitar permisos usando gal
         hasAccess = await Gal.requestAccess();
 
         if (!hasAccess) {
@@ -346,11 +572,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         }
       }
 
-      // ⭐ CAMBIO: Usar Gal.putImageBytes en lugar de ImageGallerySaver.saveImage
-      await Gal.putImageBytes(
-        image,
-        album: 'ButterflyAR', // Opcional: crear un álbum específico para la app
-      );
+      await Gal.putImageBytes(image, album: 'ButterflyAR');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -361,7 +583,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       if (mounted) {
         String errorMessage = 'Error al guardar la foto';
 
-        // ⭐ CAMBIO: Manejar errores específicos de Gal
         if (e is GalException) {
           switch (e.type) {
             case GalExceptionType.accessDenied:
@@ -396,288 +617,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         content: Text('¡Mariposa cargada! Toca para interactuar'),
         duration: Duration(seconds: 2),
         backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  // ==================== GESTURE HANDLING ====================
-
-  void _handlePanUpdate(DragUpdateDetails details) {
-    if (!_isModelSelected) return;
-
-    // Convertir el movimiento del dedo a rotación
-    final sensitivity = 0.01;
-    final deltaX = details.delta.dx * sensitivity;
-
-    // Solo rotar en Y (horizontal)
-    _modelRotationY += deltaX;
-
-    // Aplicar la rotación al modelo manteniendo la escala fija
-    if (Platform.isIOS && _butterflyNode != null) {
-      final rotationMatrix = vector.Matrix3.rotationY(_modelRotationY);
-      _butterflyNode?.rotation = rotationMatrix;
-    } else if (Platform.isAndroid && _butterflyARCoreNode != null) {
-      // Para ARCore, la rotación se maneja diferente
-      // Esto es un placeholder - verificar documentación de ARCore plugin
-      // _butterflyARCoreNode?.rotation = vector.Vector4(0, _modelRotationY, 0, 1);
-    }
-
-    // Opcional: Feedback háptico suave durante la rotación
-    if (details.delta.dx.abs() > 2) {
-      HapticFeedback.selectionClick();
-    }
-  }
-
-  // ==================== AR VIEW BUILDERS ====================
-
-  Widget _buildARView() {
-    return GestureDetector(
-      onTap: _handleTap,
-      onPanUpdate: _handlePanUpdate, // ⭐ AÑADIR GESTOS DE ARRASTRE
-      child: ARKitSceneView(
-        onARKitViewCreated: (controller) {
-          _arkitController = controller;
-          ARLogger.success('Vista ARKit creada');
-          controller.onAddNodeForAnchor = _onAddAnchor;
-        },
-        showFeaturePoints: false,
-        showWorldOrigin: false,
-        planeDetection: ARPlaneDetection.horizontal,
-        autoenablesDefaultLighting: true,
-        debug: false,
-      ),
-    );
-  }
-
-  Widget _buildARCoreView() {
-    return GestureDetector(
-      onTap: _handleTap,
-      onPanUpdate: _handlePanUpdate,
-      child: ArCoreView(
-        onArCoreViewCreated: (controller) {
-          _arcoreController = controller;
-          ARLogger.success('Vista ARCore creada');
-          controller.onPlaneDetected = _onARCorePlaneDetected;
-          controller.onPlaneTap = _onARCorePlaneTap;
-        },
-        enableTapRecognizer: true,
-      ),
-    );
-  }
-
-  // ==================== AR VIEW BUILDERS END ====================
-
-  // ==================== AR LOGIC iOS ====================
-
-  // ALTERNATIVA: COLOCAR EN EL PLANO DETECTADO
-  void _onAddAnchor(ARKitAnchor anchor) {
-    if (anchor is ARKitPlaneAnchor && !_isModelLoaded) {
-      setState(() => _planeDetected = true);
-      ARLogger.log('✅ Plano horizontal detectado en ARKit');
-
-      final position = vector.Vector3(0, -0.1, -0.5); // Posición más cercana
-      final nodeName = 'butterfly_${DateTime.now().millisecondsSinceEpoch}';
-
-      _butterflyNode = ARKitReferenceNode(
-        url: selectedButterfly.modelAssetIOS!,
-        scale: vector.Vector3.all(_fixedScale), // ⭐ ESCALA FIJA
-        name: nodeName,
-        position: position,
-      );
-
-      _arkitController?.add(_butterflyNode!);
-      _currentARNodeName = nodeName;
-      setState(() => _isModelLoaded = true);
-      _startIdleAnimation(); // Solo animación idle
-      ARLogger.success('✅ Mariposa cargada y colocada exitosamente en ARKit');
-      _showSuccessSnackbar();
-    }
-  }
-
-  // ==================== AR LOGIC Android ====================
-
-  void _onARCorePlaneDetected(ArCorePlane plane) {
-    setState(() => _planeDetected = true);
-    ARLogger.log('✅ Plano detectado en ARCore');
-  }
-
-  void _onARCorePlaneTap(List<ArCoreHitTestResult> hits) {
-    if (hits.isNotEmpty && !_isModelLoaded) {
-      final hit = hits.first;
-      _loadARCoreModel(hit);
-    }
-  }
-
-  Future<void> _loadARCoreModel(ArCoreHitTestResult hit) async {
-    try {
-      final position = hit.pose.translation;
-      final nodeName = 'butterfly_${DateTime.now().millisecondsSinceEpoch}';
-
-      _butterflyARCoreNode = ArCoreReferenceNode(
-        name: nodeName,
-        objectUrl: selectedButterfly.modelAssetAndroid!,
-        position: vector.Vector3(position.x, position.y, position.z),
-        scale: vector.Vector3.all(_fixedScale),
-      );
-
-      await _arcoreController?.addArCoreNode(_butterflyARCoreNode!);
-      _currentARNodeName = nodeName;
-      setState(() => _isModelLoaded = true);
-      _startIdleAnimationARCore();
-      ARLogger.success('✅ Mariposa cargada en ARCore');
-      _showSuccessSnackbar();
-    } catch (e) {
-      ARLogger.error('Error cargando modelo en ARCore', e);
-    }
-  }
-
-  void _startIdleAnimationARCore() {
-    _stopIdleAnimation();
-
-    _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
-      timer,
-    ) {
-      if (!mounted || _isModelSelected || _butterflyARCoreNode == null) {
-        return;
-      }
-
-      _idleFloatingOffset += 0.03;
-      final floatingY = math.sin(_idleFloatingOffset) * 0.02;
-
-      // Get current position and create new position with floating offset
-      final currentPos = _butterflyARCoreNode!.position;
-      if (currentPos != null) {
-        final newPosition = vector.Vector3(
-          currentPos.value.x,
-          currentPos.value.y + floatingY,
-          currentPos.value.z,
-        );
-
-        // Create a new node at the updated position
-        final newNode = ArCoreReferenceNode(
-          name: _butterflyARCoreNode!.name,
-          objectUrl: selectedButterfly.modelAssetAndroid!,
-          position: newPosition,
-          scale: _butterflyARCoreNode!.scale?.value ?? vector.Vector3.all(1.0),
-          rotation:
-              _butterflyARCoreNode!.rotation?.value ??
-              vector.Vector4(0, 0, 0, 1),
-        );
-
-        // Remove the old node and add the new one
-        _arcoreController?.removeNode(nodeName: _butterflyARCoreNode!.name);
-        _arcoreController?.addArCoreNode(newNode);
-        _butterflyARCoreNode = newNode;
-      }
-    });
-  }
-
-  // ==================== AR LOGIC END ====================
-
-  // ==================== ANIMATIONS ====================
-
-  void _startIdleAnimation() {
-    _stopIdleAnimation();
-
-    if (Platform.isIOS && _butterflyNode != null) {
-      // Solo flotación suave cuando NO está seleccionada para ARKit
-      _idleAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
-        timer,
-      ) {
-        if (mounted && !_isModelSelected && _butterflyNode != null) {
-          _idleFloatingOffset += 0.03;
-          final floatingY =
-              math.sin(_idleFloatingOffset) * 0.02; // Flotación muy sutil
-          _butterflyNode?.position = vector.Vector3(
-            _butterflyNode!.position.x,
-            -0.1 + floatingY, // Mantener posición base + flotación
-            _butterflyNode!.position.z,
-          );
-        }
-      });
-    } else if (Platform.isAndroid && _butterflyARCoreNode != null) {
-      // Para ARCore usar el método específico
-      _startIdleAnimationARCore();
-    }
-  }
-
-  void _stopIdleAnimation() {
-    _idleAnimationTimer?.cancel();
-  }
-
-  // ==================== USER INTERACTIONS ====================
-
-  Widget _buildStaticView() {
-    final modelPath = selectedButterfly.modelAssetAndroid;
-
-    final Widget modelContent = modelPath != null && modelPath.isNotEmpty
-        ? Expanded(
-            child: ModelViewer(
-              backgroundColor: Colors.transparent,
-              src: modelPath,
-              alt: "Modelo 3D de ${selectedButterfly.name}",
-              ar: false,
-              autoRotate: true,
-              cameraControls: true,
-              autoPlay: true,
-              loading: Loading.eager,
-              disableZoom: false,
-            ),
-          )
-        : Column(
-            children: [
-              Icon(
-                _arSupport == ARPlatformSupport.none
-                    ? Icons.phone_android
-                    : LucideIcons.box,
-                size: 64,
-                color: Colors.white,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _arSupport == ARPlatformSupport.none
-                    ? 'Vista previa 3D'
-                    : 'Modelo 3D',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _arSupport == ARPlatformSupport.arkit
-                    ? 'Toca el botón AR para realidad aumentada'
-                    : _arSupport == ARPlatformSupport.arcore
-                    ? 'Toca el botón AR para realidad aumentada'
-                    : 'AR no soportado en este dispositivo',
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          );
-
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(
-            _isDayBackground
-                ? 'assets/backgrounds/day.png'
-                : 'assets/backgrounds/night.png',
-          ),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [modelContent],
-            ),
-          ),
-          _buildStaticViewControls(),
-        ],
       ),
     );
   }
@@ -753,57 +692,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     );
   }
 
-  // ==================== UI COMPONENTS ====================
-
-  // ==================== DEBUG CONTROLS ====================
-
-  void _adjustScale(bool increase) {
-    if (_butterflyNode == null) return;
-
-    if (increase) {
-      _currentScale = (_currentScale * 1.2).clamp(0.001, 1.0); // Aumentar 20%
-    } else {
-      _currentScale = (_currentScale * 0.8).clamp(0.001, 1.0); // Reducir 20%
-    }
-
-    // Create a new node with the updated scale
-    final rotation = _butterflyNode!.eulerAngles;
-    final rotationVector = vector.Vector4(
-      rotation.x,
-      rotation.y,
-      rotation.z,
-      1.0,
-    );
-
-    final newNode = ARKitNode(
-      geometry: _butterflyNode!.geometry,
-      position: _butterflyNode!.position,
-      rotation: rotationVector,
-      scale: vector.Vector3.all(_currentScale),
-      name: _butterflyNode!.name,
-    );
-
-    // Remove the old node by name and add the new one
-    if (_butterflyNode?.name != null) {
-      _arkitController?.remove(_butterflyNode!.name!);
-    }
-
-    _arkitController?.add(newNode);
-    _butterflyNode = newNode;
-
-    ARLogger.log('Nueva escala: $_currentScale');
-
-    // Show current scale
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Escala: ${_currentScale.toStringAsFixed(3)}'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
-  }
-
   Widget _buildFloatingButton({
     required IconData icon,
     required VoidCallback onPressed,
@@ -833,6 +721,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     );
   }
 
+  /// ⭐ PANEL DE INFORMACIÓN COMPLETA MEJORADO
   void _showInfo() {
     setState(() => _showingInfo = true);
     showModalBottomSheet(
@@ -846,9 +735,12 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   Widget _buildInfoSheet() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final secondaryColor = isDark ? Colors.white70 : Colors.black54;
+    final sectionTitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E2936) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -862,6 +754,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       ),
       child: Column(
         children: [
+          // Barra de agarre
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 12),
@@ -873,24 +766,34 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
               ),
             ),
           ),
+          
+          // Contenido principal
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Encabezado con imagen y nombre
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 100,
+                        height: 100,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           image: DecorationImage(
                             image: AssetImage(selectedButterfly.imageAsset),
                             fit: BoxFit.cover,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -902,6 +805,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                               selectedButterfly.name,
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: textColor,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -909,7 +813,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                               selectedButterfly.scientificName,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontStyle: FontStyle.italic,
-                                color: Colors.grey[600],
+                                color: secondaryColor,
                               ),
                             ),
                           ],
@@ -917,20 +821,157 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
                       ),
                     ],
                   ),
+                  
+                  // Espaciado
                   const SizedBox(height: 24),
-                  Text(
-                    'Descripción',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[400],
+                  
+                  // Descripción
+                  if (selectedButterfly.description.isNotEmpty) ...[
+                    Text(
+                      'Descripción',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    selectedButterfly.description,
-                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    Text(
+                      selectedButterfly.description,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: textColor.withOpacity(0.9),
+                        height: 1.6,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  
+                  // Características
+                  if (selectedButterfly.characteristics.isNotEmpty) ...[
+                    Text(
+                      'Características',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...selectedButterfly.characteristics.map(
+                      (characteristic) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, right: 8),
+                              child: Icon(
+                                LucideIcons.check,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                characteristic,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: textColor.withOpacity(0.9),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  
+                  // Hábitat
+                  if (selectedButterfly.habitat.isNotEmpty) ...[
+                    Text(
+                      'Hábitat',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.green[900]!.withOpacity(0.2) : Colors.green[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.treePine,
+                            color: Colors.green[isDark ? 300 : 700],
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              selectedButterfly.habitat,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: textColor.withOpacity(0.9),
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  
+                  // Distribución
+                  if (selectedButterfly.distribution.isNotEmpty) ...[
+                    Text(
+                      'Distribución',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.blue[900]!.withOpacity(0.2) : Colors.blue[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.globe,
+                            color: Colors.blue[isDark ? 300 : 700],
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              selectedButterfly.distribution,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: textColor.withOpacity(0.9),
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ],
               ),
             ),
@@ -957,11 +998,13 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
             else
               Platform.isIOS &&
                       _isARMode &&
-                      _arSupport == ARPlatformSupport.arkit
+                      _arSupport == ARPlatformSupport.arkit &&
+                      selectedButterfly.hasIOSModel
                   ? _buildARView()
                   : Platform.isAndroid &&
                         _isARMode &&
-                        _arSupport == ARPlatformSupport.arcore
+                        _arSupport == ARPlatformSupport.arcore &&
+                        selectedButterfly.hasAndroidModel
                   ? _buildARCoreView()
                   : _buildStaticView(),
 
@@ -1007,8 +1050,14 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
             onPressed: () => Navigator.pop(context),
             tooltip: 'Atrás',
           ),
-          if ((_arSupport == ARPlatformSupport.arkit && Platform.isIOS) ||
-              (_arSupport == ARPlatformSupport.arcore && Platform.isAndroid))
+          // ⭐ MOSTRAR BOTÓN AR SOLO SI HAY SOPORTE Y MODELO DISPONIBLE
+          if (((_arSupport == ARPlatformSupport.arkit &&
+                      Platform.isIOS &&
+                      selectedButterfly.hasIOSModel) ||
+                  (_arSupport == ARPlatformSupport.arcore &&
+                      Platform.isAndroid &&
+                      selectedButterfly.hasAndroidModel)) &&
+              _hasCameraPermission)
             _buildFloatingButton(
               icon: _isARMode ? LucideIcons.image : LucideIcons.box,
               onPressed: () {
@@ -1040,7 +1089,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
             onPressed: _captureScreen,
             tooltip: 'Capturar',
           ),
-          // ⭐ BOTONES DE DEBUG REMOVIDOS
         ],
       ),
     );
@@ -1130,9 +1178,9 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       ),
     );
   }
+
   // ==================== LIFECYCLE ====================
 
-  // Convertir ImageProvider a Uint8List
   Future<Uint8List?> _imageProviderToUint8List(
     ImageProvider imageProvider,
   ) async {
@@ -1162,12 +1210,12 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   @override
   void dispose() {
     ARLogger.log('Cerrando experiencia AR');
-    _stopIdleAnimation(); // ⭐ ACTUALIZADO NOMBRE
+    _stopIdleAnimation();
     _audioPlayer?.stop();
     _audioPlayer?.dispose();
     _slideController.dispose();
     _arkitController?.dispose();
-    _arcoreController?.dispose(); // Agregar disposal de ARCore
+    _arcoreController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -1178,17 +1226,13 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       case AppLifecycleState.resumed:
         ARLogger.log('App resumed - rechecking permissions');
         _checkCameraPermission();
-        if ((_arkitController != null || _arcoreController != null) &&
-            !_isModelLoaded) {
-          // No llamar _loadButterflyModel ya que usamos auto-detección de planos
-        }
         _playAmbientSound();
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
         ARLogger.log('App paused/inactive - stopping animations and audio');
-        _stopIdleAnimation(); // ⭐ ACTUALIZADO NOMBRE
+        _stopIdleAnimation();
         _audioPlayer?.pause();
         break;
       case AppLifecycleState.detached:
