@@ -28,6 +28,9 @@ Future<List<Butterfly>> loadButterfliesFromAssets() async {
         modelAssetAndroid: json['modelAssetAndroid'] as String? ?? '',
         modelAssetIOS: json['modelAssetIOS'] as String? ?? '',
         ambientSound: json['ambientSound'] as String?,
+        characteristics: List<String>.from(json['characteristics'] ?? []),
+        habitat: json['habitat'] as String? ?? '',
+        distribution: json['distribution'] as String? ?? '',
       );
     }).toList();
 

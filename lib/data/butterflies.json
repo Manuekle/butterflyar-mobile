@@ -6,8 +6,8 @@
       "scientificName": "Danaus plexippus",
       "description": "La mariposa monarca es famosa por su increíble migración de miles de kilómetros. Sus alas naranjas con venes negras y bordes negros con puntos blancos la hacen inconfundible. Es una de las migraciones más espectaculares del reino animal.",
       "imageAsset": "assets/images/monarca.jpg",
-      "modelAssetAndroid": "assets/models/monarca.glb",
-      "modelAssetIOS": "models.scnassets/monarca.scn",
+      "modelAssetAndroid": "assets/models/test.glb",
+      "modelAssetIOS": "models.scnassets/test.scn",
       "ambientSound": "assets/sounds/forest_ambient.mp3",
       "characteristics": [
         "Migración épica de hasta 4,000 km",
