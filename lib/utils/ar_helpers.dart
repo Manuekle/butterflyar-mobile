@@ -70,30 +70,12 @@ class SimpleARSupport {
           _cachedSupport = ARPlatformSupport.modelViewer;
         }
       }
-      // Android: verificar soporte ARCore
+      // Android: usar solo Model Viewer (ARCore deshabilitado)
       else if (Platform.isAndroid) {
-        try {
-          final deviceInfo = DeviceInfoPlugin();
-          final androidInfo = await deviceInfo.androidInfo;
-          final apiLevel = androidInfo.version.sdkInt;
-
-          // ARCore requiere Android API 24+ (Android 7.0+)
-          if (apiLevel < 24) {
-            debugPrint(
-              'ARCore requires Android API 24 or later. Current API: $apiLevel',
-            );
-            _cachedSupport = ARPlatformSupport.modelViewer;
-            return _cachedSupport;
-          }
-
-          // TODO: Aquí podrías agregar verificación adicional de compatibilidad ARCore
-          // Por ahora, asumimos que dispositivos con API 24+ pueden usar ARCore
-          _cachedSupport = ARPlatformSupport.arcore;
-          debugPrint('ARCore is supported on this device (API $apiLevel)');
-        } catch (e) {
-          debugPrint('Error checking Android ARCore support: $e');
-          _cachedSupport = ARPlatformSupport.modelViewer;
-        }
+        // Deshabilitar ARCore completamente para evitar problemas con el plugin
+        // Solo usar Model Viewer en Android
+        _cachedSupport = ARPlatformSupport.modelViewer;
+        debugPrint('Android: Using Model Viewer only (ARCore disabled)');
       }
     } catch (e) {
       debugPrint('Error detecting AR support: $e');

@@ -1,23 +1,42 @@
 {
   "butterflies": [
     {
-      "id": "monarca",
-      "name": "Monarca",
-      "scientificName": "Danaus plexippus",
-      "description": "La mariposa monarca es famosa por su increíble migración de miles de kilómetros. Sus alas naranjas con venes negras y bordes negros con puntos blancos la hacen inconfundible. Es una de las migraciones más espectaculares del reino animal.",
-      "imageAsset": "assets/images/monarca.jpg",
-      "modelAssetAndroid": "assets/models/test.glb",
-      "modelAssetIOS": "models.scnassets/test.scn",
+      "id": "actinote_osomene",
+      "name": "Luminaria Negra",
+      "scientificName": "Actinote osomene",
+      "description": "La Actinote osomene es una mariposa de la familia Nymphalidae que destaca por sus alas semitransparentes con tonos anaranjados y marrones. Es común en zonas montañosas y húmedas, donde se alimenta del néctar de diversas flores.",
+      "imageAsset": "assets/images/actinote_osomene.jpg",
+      "modelAssetAndroid": "assets/models/actinote_osomene.glb",
+      "modelAssetIOS": "models.scnassets/actinote_osomene.scn",
       "ambientSound": "assets/sounds/forest_ambient.mp3",
       "characteristics": [
-        "Migración épica de hasta 4,000 km",
-        "Alas naranjas distintivas con venas negras",
-        "Resistente a toxinas de algodoncillo",
-        "Cuatro generaciones por año",
-        "Navegación usando el sol y campo magnético"
+        "Alas anaranjadas con bordes oscuros y zonas translúcidas",
+        "Pertenece a la subfamilia Heliconiinae",
+        "Vuela lentamente a baja altura",
+        "Las larvas se alimentan de plantas del género Eupatorium",
+        "Frecuente en áreas húmedas y boscosas"
       ],
-      "habitat": "Campos abiertos, jardines, praderas, bordes de bosque",
-      "distribution": "Norteamérica, con migraciones estacionales a México y California"
+      "habitat": "Bosques montanos y bordes de selva húmeda",
+      "distribution": "América Central y del Sur, especialmente en regiones andinas"
+    },
+    {
+      "id": "eresia_levina",
+      "name": "Eresia levina",
+      "scientificName": "Eresia levina",
+      "description": "Eresia levina es una mariposa de la familia Nymphalidae reconocida por sus vivos patrones anaranjados y negros. Suele encontrarse en áreas abiertas y soleadas, y su vuelo es ágil y bajo, desplazándose entre arbustos y flores.",
+      "imageAsset": "assets/images/eresia_levina.jpg",
+      "modelAssetAndroid": "assets/models/eresia_levina.glb",
+      "modelAssetIOS": "models.scnassets/eresia_levina.scn",
+      "ambientSound": "assets/sounds/forest_ambient.mp3",
+      "characteristics": [
+        "Alas anaranjadas con bandas negras marcadas",
+        "Comportamiento territorial en machos",
+        "Vuelo rápido y bajo sobre vegetación",
+        "Asociada a plantas del género Justicia y Ruellia",
+        "Adaptable a ambientes perturbados y claros de bosque"
+      ],
+      "habitat": "Zonas abiertas, bordes de bosque y senderos soleados",
+      "distribution": "Desde América Central hasta regiones del norte de Sudamérica"
     }
   ]
 }

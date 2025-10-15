@@ -165,7 +165,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                 // Footer with logos and information
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 32),
+                  padding: const EdgeInsets.only(top: 24, bottom: 24),
                   child: Column(
                     children: [
                       // Logos row
@@ -174,10 +174,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         children: [
                           // Smurfit Logo
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Container(
-                              width: 100,
-                              height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: SizedBox(
+                              width: 70,
+                              height: 35,
                               child: SvgPicture.asset(
                                 'assets/icon/smurtfit/smurtfit.svg',
                                 colorFilter: ColorFilter.mode(
@@ -193,10 +193,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                           // FUP Logo
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Container(
-                              width: 100,
-                              height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: SizedBox(
+                              width: 70,
+                              height: 35,
                               child: SvgPicture.asset(
                                 'assets/icon/universidad/fup.svg',
                                 colorFilter: ColorFilter.mode(
@@ -212,17 +212,17 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                           // Deveniac Logo
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Container(
-                              width: 40,
-                              height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: SizedBox(
+                              width: 30,
+                              height: 30,
                               child: Image.asset(
                                 'assets/icon/semillero/deveniac.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
                                   return const Icon(
                                     Icons.image_not_supported,
-                                    size: 40,
+                                    size: 30,
                                   );
                                 },
                               ),
@@ -230,7 +230,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       // Version and year
                       Text(
                         'Versión 1.0.0 • 2025',
