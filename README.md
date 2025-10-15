@@ -245,33 +245,24 @@ Cada especie debe tener un archivo `metadata.json` con la siguiente estructura:
 
 ```json
 {
-  "id": "especie_unica",
-  "commonName": "Nombre Común",
-  "scientificName": "Nombre Científico",
-  "family": "Familia",
-  "description": "Descripción detallada...",
-  "habitat": "Descripción del hábitat...",
-  "conservationStatus": "LC|NT|VU|EN|CR|EW|EX",
-  "wingspan": "7-10 cm",
-  "diet": ["néctar", "fruta madura"],
-  "regions": ["América del Norte", "Centroamérica"],
-  "model": {
-    "path": "species/monarca/model.glb",
-    "scale": 1.0,
-    "rotation": [0, 0, 0],
-    "animation": "idle"
-  },
-  "gallery": ["species/monarca/gallery/1.jpg", "species/monarca/gallery/2.jpg"],
-  "sounds": {
-    "wingFlap": "species/monarca/sounds/wing_flap.mp3"
-  },
-  "facts": [
-    "Pueden viajar hasta 4,000 km durante su migración",
-    "Su coloración advierte a los depredadores de su toxicidad"
-  ],
-  "discovered": 1758,
-  "discoverer": "Carlos Linneo"
-}
+      "id": "monarca",
+      "name": "Monarca",
+      "scientificName": "Danaus plexippus",
+      "description": "La mariposa monarca es famosa por su increíble migración de miles de kilómetros. Sus alas naranjas con venes negras y bordes negros con puntos blancos la hacen inconfundible. Es una de las migraciones más espectaculares del reino animal.",
+      "imageAsset": "assets/images/monarca.jpg",
+      "modelAssetAndroid": "assets/models/monarca.glb",
+      "modelAssetIOS": "models.scnassets/monarca.scn",
+      "ambientSound": "assets/sounds/forest_ambient.mp3",
+      "characteristics": [
+        "Migración épica de hasta 4,000 km",
+        "Alas naranjas distintivas con venas negras",
+        "Resistente a toxinas de algodoncillo",
+        "Cuatro generaciones por año",
+        "Navegación usando el sol y campo magnético"
+      ],
+      "habitat": "Campos abiertos, jardines, praderas, bordes de bosque",
+      "distribution": "Norteamérica, con migraciones estacionales a México y California"
+    }
 ```
 
 ## 🔍 Integración QR
