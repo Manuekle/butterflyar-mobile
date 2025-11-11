@@ -95,21 +95,34 @@ class Butterfly {
     };
   }
 
-  // Create from JSON map
+  // ⭐ Create from JSON map - Optimizado con validaciones
   factory Butterfly.fromJson(Map<String, dynamic> json) {
+    // Validar campos requeridos
+    final id = json['id'] as String?;
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('Butterfly ID is required and cannot be empty');
+    }
+
     return Butterfly(
-      id: json['id'] as String? ?? '',
+      id: id,
       name: json['name'] as String? ?? 'Unknown',
       scientificName: json['scientificName'] as String? ?? '',
       description: json['description'] as String? ?? '',
       imageAsset: json['imageAsset'] as String? ?? '',
-      modelAssetAndroid: json['modelAssetAndroid'] as String?,
-      modelAssetIOS: json['modelAssetIOS'] as String?,
-      ambientSound: json['ambientSound'] as String?,
-      characteristics: List<String>.from(json['characteristics'] ?? []),
+      modelAssetAndroid: _normalizeAssetPath(json['modelAssetAndroid'] as String?),
+      modelAssetIOS: _normalizeAssetPath(json['modelAssetIOS'] as String?),
+      ambientSound: _normalizeAssetPath(json['ambientSound'] as String?),
+      characteristics: List<String>.from(json['characteristics'] ?? [], growable: false),
       habitat: json['habitat'] as String? ?? '',
       distribution: json['distribution'] as String? ?? '',
     );
+  }
+
+  // ⭐ Normalizar rutas de assets (eliminar espacios y validar)
+  static String? _normalizeAssetPath(String? path) {
+    if (path == null) return null;
+    final normalized = path.trim();
+    return normalized.isEmpty ? null : normalized;
   }
 
   @override

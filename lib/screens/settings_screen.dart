@@ -197,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           onTap: () => _showInfoDialog(
             context,
             'Manuel Esteban Erazo Medina',
-            'Estudiante de Ingeniería de Sistemas\nUniversidad: Fundación Universitaria de Popayán\nCorreo: manuel.erazo@fup.edu.co',
+            'Estudiante de Ingeniería de Sistemas\nUniversidad: Fundación Universitaria de Popayán\nCorreo: manuel.erazo@estudiante.fup.edu.co',
           ),
         ),
         _buildDivider(),

@@ -44,6 +44,7 @@ class ButterflyCard extends StatelessWidget {
                   ? Image.asset(
                       imageAsset,
                       fit: BoxFit.cover,
+                      cacheWidth: 120, // ⭐ Cache optimizado para mejor rendimiento
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
                           Icons.flutter_dash_outlined,

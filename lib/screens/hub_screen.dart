@@ -49,6 +49,7 @@ class _HubScreenState extends State<HubScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.height < 700; // ⭐ Detectar pantallas pequeñas
 
     return Scaffold(
       body: SafeArea(
@@ -63,121 +64,44 @@ class _HubScreenState extends State<HubScreen>
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,
                     ),
-                    child: IntrinsicHeight(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header
-                            _buildHeader(context, theme),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: isSmallScreen ? 16 : 24, // ⭐ Padding adaptativo
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min, // ⭐ Evitar overflow
+                        children: [
+                          // Header
+                          _buildHeader(context, theme),
 
-                            SizedBox(height: size.height * 0.05),
+                          SizedBox(
+                            height: isSmallScreen
+                                ? 16
+                                : size.height * 0.04, // ⭐ Espaciado adaptativo
+                          ),
 
-                            // Welcome Section
-                            _buildWelcomeSection(theme),
+                          // Welcome Section
+                          _buildWelcomeSection(theme, isSmallScreen),
 
-                            SizedBox(height: size.height * 0.08),
+                          SizedBox(
+                            height: isSmallScreen
+                                ? 20
+                                : size.height * 0.06, // ⭐ Espaciado adaptativo
+                          ),
 
-                            // Main Actions
-                            _buildMainActions(context, theme),
+                          // Main Actions
+                          _buildMainActions(context, theme),
 
-                            const Spacer(),
+                          // ⭐ Espaciado flexible en lugar de Spacer
+                          SizedBox(
+                            height: isSmallScreen ? 20 : 40,
+                          ),
 
-                            const Spacer(),
-
-                            // Institution Logos
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 30),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  // Logos row
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      // Smurfit Logo
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
-                                        child: Container(
-                                          width: 100,
-                                          height: 50,
-                                          child: SvgPicture.asset(
-                                            'assets/icon/smurtfit/smurtfit.svg',
-                                            colorFilter: ColorFilter.mode(
-                                              theme.brightness ==
-                                                      Brightness.dark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              BlendMode.srcIn,
-                                            ),
-                                            fit: BoxFit.contain,
-                                          ),
-                                        ),
-                                      ),
-
-                                      // FUP Logo
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
-                                        child: Container(
-                                          width: 100,
-                                          height: 50,
-                                          child: SvgPicture.asset(
-                                            'assets/icon/universidad/fup.svg',
-                                            colorFilter: ColorFilter.mode(
-                                              theme.brightness ==
-                                                      Brightness.dark
-                                                  ? Colors.white
-                                                  : Colors.black,
-                                              BlendMode.srcIn,
-                                            ),
-                                            fit: BoxFit.contain,
-                                          ),
-                                        ),
-                                      ),
-
-                                      // Deveniac Logo
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
-                                        child: Container(
-                                          width: 40,
-                                          height: 40,
-                                          child: Image.asset(
-                                            'assets/icon/semillero/deveniac.png',
-                                            fit: BoxFit.contain,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return const Icon(
-                                                    Icons.image_not_supported,
-                                                    size: 40,
-                                                  );
-                                                },
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  // Version and year
-                                  Text(
-                                    'Versión 1.0.0 • 2025',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.textTheme.bodySmall?.color
-                                          ?.withOpacity(0.7),
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          // Institution Logos
+                          _buildInstitutionLogos(theme, isSmallScreen),
+                        ],
                       ),
                     ),
                   ),
@@ -186,6 +110,105 @@ class _HubScreenState extends State<HubScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// ⭐ Widget para logos de instituciones - Responsive
+  Widget _buildInstitutionLogos(ThemeData theme, bool isSmallScreen) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: isSmallScreen ? 16 : 24, // ⭐ Padding adaptativo
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Logos row - Responsive
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Smurfit Logo
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 8 : 12,
+                  ),
+                  child: Container(
+                    width: isSmallScreen ? 80 : 100,
+                    height: isSmallScreen ? 40 : 50,
+                    child: SvgPicture.asset(
+                      'assets/icon/smurtfit/smurtfit.svg',
+                      colorFilter: ColorFilter.mode(
+                        theme.brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                        BlendMode.srcIn,
+                      ),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+
+              // FUP Logo
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 8 : 12,
+                  ),
+                  child: Container(
+                    width: isSmallScreen ? 80 : 100,
+                    height: isSmallScreen ? 40 : 50,
+                    child: SvgPicture.asset(
+                      'assets/icon/universidad/fup.svg',
+                      colorFilter: ColorFilter.mode(
+                        theme.brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                        BlendMode.srcIn,
+                      ),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Deveniac Logo
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 8 : 12,
+                  ),
+                  child: Container(
+                    width: isSmallScreen ? 32 : 40,
+                    height: isSmallScreen ? 32 : 40,
+                    child: Image.asset(
+                      'assets/icon/semillero/deveniac.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.image_not_supported,
+                          size: isSmallScreen ? 32 : 40,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isSmallScreen ? 12 : 16),
+          // Version and year
+          Text(
+            'Versión 1.0.0 • 2025',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+              fontSize: isSmallScreen ? 11 : null, // ⭐ Tamaño de fuente adaptativo
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -236,9 +259,10 @@ class _HubScreenState extends State<HubScreen>
     );
   }
 
-  Widget _buildWelcomeSection(ThemeData theme) {
+  Widget _buildWelcomeSection(ThemeData theme, bool isSmallScreen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'Explora el mundo\nde las mariposas',
@@ -246,16 +270,19 @@ class _HubScreenState extends State<HubScreen>
             fontWeight: FontWeight.w700,
             height: 1.1,
             letterSpacing: -0.5,
+            fontSize: isSmallScreen
+                ? 28
+                : null, // ⭐ Tamaño de fuente adaptativo para pantallas pequeñas
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isSmallScreen ? 12 : 20),
         Text(
           'Descubre especies únicas con realidad aumentada y aprende sobre su fascinante mundo natural.',
           style: theme.textTheme.bodyLarge?.copyWith(
             height: 1.6,
             color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.9),
             letterSpacing: -0.5,
-            fontSize: 14,
+            fontSize: isSmallScreen ? 13 : 14, // ⭐ Tamaño de fuente adaptativo
           ),
         ),
       ],
@@ -263,7 +290,11 @@ class _HubScreenState extends State<HubScreen>
   }
 
   Widget _buildMainActions(BuildContext context, ThemeData theme) {
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.height < 700;
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Escanear QR - Acción principal
         SizedBox(
@@ -275,10 +306,11 @@ class _HubScreenState extends State<HubScreen>
             title: 'Escanear QR',
             subtitle: 'Escanea un código QR para ver una mariposa en RA',
             onTap: () => Navigator.pushNamed(context, '/qr'),
+            isSmallScreen: isSmallScreen,
           ),
         ),
 
-        const SizedBox(height: 20),
+        SizedBox(height: isSmallScreen ? 16 : 20),
 
         // Ver especies - Acción secundaria
         SizedBox(
@@ -290,6 +322,7 @@ class _HubScreenState extends State<HubScreen>
             title: 'Ver especies',
             subtitle: 'Explora nuestra colección de mariposas',
             onTap: () => Navigator.pushNamed(context, '/species'),
+            isSmallScreen: isSmallScreen,
           ),
         ),
       ],
@@ -303,6 +336,7 @@ class _HubScreenState extends State<HubScreen>
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isSmallScreen = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -312,7 +346,7 @@ class _HubScreenState extends State<HubScreen>
         transform: Matrix4.identity()..scale(1.0),
         transformAlignment: Alignment.center,
         child: Container(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(isSmallScreen ? 20 : 28), // ⭐ Padding adaptativo
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -332,19 +366,24 @@ class _HubScreenState extends State<HubScreen>
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Icono
               Container(
-                width: 64,
-                height: 64,
+                width: isSmallScreen ? 56 : 64, // ⭐ Tamaño adaptativo
+                height: isSmallScreen ? 56 : 64,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, size: 32, color: Colors.white),
+                child: Icon(
+                  icon,
+                  size: isSmallScreen ? 28 : 32,
+                  color: Colors.white,
+                ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: isSmallScreen ? 16 : 20),
 
               // Título
               Text(
@@ -352,11 +391,12 @@ class _HubScreenState extends State<HubScreen>
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: isSmallScreen ? 20 : null, // ⭐ Tamaño adaptativo
                 ),
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 8),
+              SizedBox(height: isSmallScreen ? 6 : 8),
 
               // Subtítulo
               Text(
@@ -364,12 +404,12 @@ class _HubScreenState extends State<HubScreen>
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: Colors.white.withValues(alpha: 0.9),
                   height: 1.5,
-                  fontSize: 12,
+                  fontSize: isSmallScreen ? 11 : 12, // ⭐ Tamaño adaptativo
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-
-              // const SizedBox(height: 16),
             ],
           ),
         ),
@@ -384,6 +424,7 @@ class _HubScreenState extends State<HubScreen>
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isSmallScreen = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -393,7 +434,7 @@ class _HubScreenState extends State<HubScreen>
         transform: Matrix4.identity()..scale(1.0),
         transformAlignment: Alignment.center,
         child: Container(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(isSmallScreen ? 20 : 28), // ⭐ Padding adaptativo
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
@@ -406,35 +447,43 @@ class _HubScreenState extends State<HubScreen>
             children: [
               // Icono
               Container(
-                width: 56,
-                height: 56,
+                width: isSmallScreen ? 48 : 56, // ⭐ Tamaño adaptativo
+                height: isSmallScreen ? 48 : 56,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, size: 28, color: theme.colorScheme.primary),
+                child: Icon(
+                  icon,
+                  size: isSmallScreen ? 24 : 28,
+                  color: theme.colorScheme.primary,
+                ),
               ),
 
-              const SizedBox(width: 20),
+              SizedBox(width: isSmallScreen ? 16 : 20),
 
               // Contenido
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
+                        fontSize: isSmallScreen ? 18 : null, // ⭐ Tamaño adaptativo
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: isSmallScreen ? 2 : 4),
                     Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         height: 1.4,
-                        fontSize: 12,
+                        fontSize: isSmallScreen ? 11 : 12, // ⭐ Tamaño adaptativo
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -443,7 +492,7 @@ class _HubScreenState extends State<HubScreen>
               // Flecha
               Icon(
                 LucideIcons.chevronRight,
-                size: 18,
+                size: isSmallScreen ? 16 : 18,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ],

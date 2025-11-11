@@ -70,12 +70,26 @@ class SimpleARSupport {
           _cachedSupport = ARPlatformSupport.modelViewer;
         }
       }
-      // Android: usar solo Model Viewer (ARCore deshabilitado)
+      // Android: asumir ARCore disponible (se verificará en tiempo de ejecución)
       else if (Platform.isAndroid) {
-        // Deshabilitar ARCore completamente para evitar problemas con el plugin
-        // Solo usar Model Viewer en Android
-        _cachedSupport = ARPlatformSupport.modelViewer;
-        debugPrint('Android: Using Model Viewer only (ARCore disabled)');
+        try {
+          final deviceInfo = DeviceInfoPlugin();
+          final androidInfo = await deviceInfo.androidInfo;
+          final sdkInt = androidInfo.version.sdkInt;
+          
+          // ARCore requiere Android 7.0 (API 24) o superior
+          if (sdkInt >= 24) {
+            _cachedSupport = ARPlatformSupport.arcore;
+            debugPrint('Android device meets ARCore minimum requirements (API $sdkInt)');
+          } else {
+            _cachedSupport = ARPlatformSupport.modelViewer;
+            debugPrint('Android version too old for ARCore (API $sdkInt < 24)');
+          }
+        } catch (e) {
+          debugPrint('Error checking Android version: $e');
+          // Asumir que puede tener ARCore y dejar que falle gracefully
+          _cachedSupport = ARPlatformSupport.arcore;
+        }
       }
     } catch (e) {
       debugPrint('Error detecting AR support: $e');
@@ -101,10 +115,16 @@ class SimpleARSupport {
     }
   }
 
-  /// Resetea el cache para volver a verificar soporte
+  /// ⭐ Resetea el cache para volver a verificar soporte
   static void resetCache() {
     _hasChecked = false;
     _cachedSupport = ARPlatformSupport.none;
+  }
+
+  /// ⭐ Verifica si el dispositivo tiene soporte AR nativo (no Model Viewer)
+  static bool isNativeARSupported(ARPlatformSupport support) {
+    return support == ARPlatformSupport.arkit || 
+           support == ARPlatformSupport.arcore;
   }
 }
 

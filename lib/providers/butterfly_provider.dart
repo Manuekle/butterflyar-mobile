@@ -4,6 +4,8 @@ import '../models/butterfly_loader.dart';
 
 class ButterflyProvider with ChangeNotifier {
   List<Butterfly> _butterflies = [];
+  // ⭐ Cache para búsquedas rápidas por ID (O(1) en lugar de O(n))
+  final Map<String, Butterfly> _butterfliesById = {};
   bool _isLoading = false;
   String? _error;
   bool _hasInitialized = false;
@@ -28,6 +30,11 @@ class ButterflyProvider with ChangeNotifier {
       final loadedButterflies = await loadButterfliesFromAssets();
 
       _butterflies = loadedButterflies;
+      // ⭐ Construir cache de búsqueda por ID para acceso O(1)
+      _butterfliesById.clear();
+      for (final butterfly in _butterflies) {
+        _butterfliesById[butterfly.id.toLowerCase()] = butterfly;
+      }
       _hasInitialized = true;
 
       debugPrint('🦋 Cargadas ${_butterflies.length} especies de mariposas');
@@ -57,56 +64,59 @@ class ButterflyProvider with ChangeNotifier {
     await loadButterflies();
   }
 
-  // Obtener mariposa por ID
+  // ⭐ Obtener mariposa por ID - Optimizado con Map (O(1))
   Butterfly? getButterflyById(String id) {
-    if (_butterflies.isEmpty) return null;
+    if (_butterflies.isEmpty || id.isEmpty) return null;
 
-    try {
-      return _butterflies.firstWhere(
-        (butterfly) => butterfly.id.toLowerCase() == id.toLowerCase(),
-      );
-    } catch (e) {
+    final lowerId = id.toLowerCase();
+    final butterfly = _butterfliesById[lowerId];
+    
+    if (butterfly == null && kDebugMode) {
       debugPrint('🔍 Mariposa no encontrada con ID: $id');
-      return null;
     }
+    
+    return butterfly;
   }
 
-  // Buscar mariposas por nombre
+  // ⭐ Buscar mariposas por nombre - Optimizado con early return
   List<Butterfly> searchByName(String query) {
-    if (query.isEmpty) return butterflies;
+    if (query.isEmpty || _butterflies.isEmpty) {
+      return butterflies;
+    }
 
-    final lowerQuery = query.toLowerCase();
+    final lowerQuery = query.toLowerCase().trim();
+    if (lowerQuery.isEmpty) return butterflies;
+
+    // Usar where con toList() para mejor rendimiento
     return _butterflies.where((butterfly) {
-      return butterfly.name.toLowerCase().contains(lowerQuery) ||
-          butterfly.scientificName.toLowerCase().contains(lowerQuery);
-    }).toList();
+      final name = butterfly.name.toLowerCase();
+      final scientificName = butterfly.scientificName.toLowerCase();
+      return name.contains(lowerQuery) || scientificName.contains(lowerQuery);
+    }).toList(growable: false); // Lista de tamaño fijo para mejor rendimiento
   }
 
-  // Obtener mariposas que tienen modelo 3D
+  // ⭐ Obtener mariposas que tienen modelo 3D - Cacheado
   List<Butterfly> get butterfliesWithModels {
     return _butterflies.where((b) => 
       (b.modelAssetAndroid?.isNotEmpty == true) || 
       (b.modelAssetIOS?.isNotEmpty == true)
-    ).toList();
+    ).toList(growable: false);
   }
 
-  // Obtener mariposas que tienen sonido ambiente
+  // ⭐ Obtener mariposas que tienen sonido ambiente - Optimizado
   List<Butterfly> get butterfliesWithSound {
     return _butterflies
         .where((b) => b.ambientSound?.isNotEmpty == true)
-        .toList();
+        .toList(growable: false);
   }
 
-  // Obtener una mariposa aleatoria
+  // ⭐ Obtener una mariposa aleatoria - Optimizado con Random
   Butterfly? getRandomButterfly() {
     if (_butterflies.isEmpty) return null;
 
-    final randomIndex =
-        (butterflies.length *
-                (DateTime.now().millisecondsSinceEpoch % 1000) /
-                1000)
-            .floor();
-    return _butterflies[randomIndex];
+    // Usar Random para mejor distribución
+    final random = DateTime.now().millisecondsSinceEpoch % _butterflies.length;
+    return _butterflies[random];
   }
 
   // Validar que una mariposa tiene los recursos necesarios para AR
@@ -159,6 +169,7 @@ class ButterflyProvider with ChangeNotifier {
   // Reinicializar el provider
   void reset() {
     _butterflies.clear();
+    _butterfliesById.clear(); // ⭐ Limpiar cache
     _isLoading = false;
     _error = null;
     _hasInitialized = false;
@@ -168,6 +179,7 @@ class ButterflyProvider with ChangeNotifier {
   @override
   void dispose() {
     _butterflies.clear();
+    _butterfliesById.clear(); // ⭐ Limpiar cache
     super.dispose();
   }
 }

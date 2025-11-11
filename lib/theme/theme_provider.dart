@@ -7,14 +7,32 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
 
+  // ⭐ Cache del estado de modo oscuro para evitar cálculos repetidos
+  bool? _cachedIsDarkMode;
+  Brightness? _lastSystemBrightness;
+
   bool get isDarkMode {
     if (_themeMode == ThemeMode.system) {
       // Obtener el brillo del sistema
       final brightness =
           WidgetsBinding.instance.platformDispatcher.platformBrightness;
-      return brightness == Brightness.dark;
+      
+      // ⭐ Usar cache si el brillo del sistema no ha cambiado
+      if (_lastSystemBrightness == brightness && _cachedIsDarkMode != null) {
+        return _cachedIsDarkMode!;
+      }
+      
+      _lastSystemBrightness = brightness;
+      _cachedIsDarkMode = brightness == Brightness.dark;
+      return _cachedIsDarkMode!;
     }
-    return _themeMode == ThemeMode.dark;
+    
+    // ⭐ Cache para modos fijos
+    final isDark = _themeMode == ThemeMode.dark;
+    if (_cachedIsDarkMode != isDark) {
+      _cachedIsDarkMode = isDark;
+    }
+    return isDark;
   }
 
   String get currentThemeText {
@@ -31,6 +49,8 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode != mode) {
       _themeMode = mode;
+      _cachedIsDarkMode = null; // ⭐ Limpiar cache al cambiar modo
+      _lastSystemBrightness = null;
       notifyListeners();
     }
   }

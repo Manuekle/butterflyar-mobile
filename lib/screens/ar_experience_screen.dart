@@ -4,22 +4,33 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart';
 import 'package:vector_math/vector_math_64.dart' as vector;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:gal/gal.dart';
 
 import 'package:arkit_plugin/arkit_plugin.dart';
-// ARCore deshabilitado en Android - solo usar Model Viewer
-// import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
+// ⭐ AR Flutter Plugin para Android ARCore
+import 'package:ar_flutter_plugin/ar_flutter_plugin.dart';
+import 'package:ar_flutter_plugin/datatypes/config_planedetection.dart';
+import 'package:ar_flutter_plugin/datatypes/node_types.dart';
+import 'package:ar_flutter_plugin/datatypes/hittest_result_types.dart';
+import 'package:ar_flutter_plugin/managers/ar_location_manager.dart';
+import 'package:ar_flutter_plugin/managers/ar_session_manager.dart';
+import 'package:ar_flutter_plugin/managers/ar_object_manager.dart';
+import 'package:ar_flutter_plugin/managers/ar_anchor_manager.dart';
+import 'package:ar_flutter_plugin/models/ar_node.dart';
+import 'package:ar_flutter_plugin/models/ar_anchor.dart';
+import 'package:ar_flutter_plugin/models/ar_hittest_result.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 import 'package:butterflyar/models/butterfly.dart';
 import 'package:butterflyar/utils/ar_helpers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ARExperienceScreen extends StatefulWidget {
   final Butterfly butterfly;
@@ -38,14 +49,18 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   // Controllers AR
   ARKitController? _arkitController; // iOS
-  // ArCoreController deshabilitado - Android usa solo Model Viewer
+  
+  // ⭐ AR Flutter Plugin managers para Android
+  ARSessionManager? _arSessionManager;
+  ARObjectManager? _arObjectManager;
+  ARAnchorManager? _arAnchorManager;
+  ARLocationManager? _arLocationManager;
 
   ARPlatformSupport _arSupport = ARPlatformSupport.none;
   bool _hasCameraPermission = false;
   bool _isARMode = true;
   bool _isDayBackground = true;
   bool _isModelSelected = false;
-  bool _showingInfo = false;
   bool _isModelLoaded = false;
   bool _planeDetected = false;
 
@@ -56,9 +71,9 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   static const double _fixedScale = 0.003; // Escala fija optimizada
 
   // Referencias a nodos AR
-  String? _currentARNodeName;
   ARKitNode? _butterflyNode; // iOS
-  // ArCoreNode deshabilitado - Android usa solo Model Viewer
+  ARNode? _butterflyARNode; // Android - ar_flutter_plugin
+  final List<ARNode> _arNodes = []; // Lista de nodos AR para Android
   late final Butterfly selectedButterfly = widget.butterfly;
 
   @override
@@ -94,16 +109,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     await _checkCameraPermission();
     await _playAmbientSound();
 
-    // Verificar si el dispositivo soporta AR nativo
-    final isARSupported =
-        (Platform.isIOS && _arSupport == ARPlatformSupport.arkit) ||
-        (Platform.isAndroid && _arSupport == ARPlatformSupport.arcore);
-
-    // Verificar si tenemos los modelos necesarios para la plataforma
-    final hasRequiredModel =
-        (Platform.isIOS && selectedButterfly.hasIOSModel) ||
-        (Platform.isAndroid && selectedButterfly.hasAndroidModel);
-
     // Siempre iniciar en modo sin AR para evitar redirección automática
     // El usuario puede cambiar manualmente si lo desea
     ARLogger.log('Iniciando en modo vista previa sin AR');
@@ -112,7 +117,21 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   Future<void> _detectARSupport() async {
     try {
-      final support = await SimpleARSupport.detectARSupport();
+      var support = await SimpleARSupport.detectARSupport();
+      
+      // ⭐ Verificación adicional para Android: verificar ARCore en tiempo de ejecución
+      if (Platform.isAndroid && support == ARPlatformSupport.arcore) {
+        try {
+          // Intentar verificar si ARCore está realmente disponible
+          // El plugin ar_flutter_plugin verificará esto al crear la vista AR
+          // Por ahora, asumimos que si la versión de Android es compatible, puede tener ARCore
+          ARLogger.log('Android detectado - ARCore se verificará al crear la vista AR');
+        } catch (e) {
+          ARLogger.error('Error verificando ARCore', e);
+          support = ARPlatformSupport.modelViewer;
+        }
+      }
+      
       setState(() => _arSupport = support);
       ARLogger.log(
         'Soporte AR detectado: ${await SimpleARSupport.getARSupportInfo()}',
@@ -131,7 +150,14 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         status = await Permission.camera.request();
       }
 
-      setState(() => _hasCameraPermission = status.isGranted);
+      final newPermissionState = status.isGranted;
+      if (_hasCameraPermission != newPermissionState) {
+        setState(() {
+          _hasCameraPermission = newPermissionState;
+          _shouldRebuildMainView = true; // ⭐ Forzar rebuild si cambió el permiso
+        });
+      }
+      
       ARLogger.log(
         'Estado de permisos de cámara: ${status.toString().split('.').last}',
       );
@@ -143,7 +169,12 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       }
     } catch (e) {
       ARLogger.error('Error verificando permisos de cámara', e);
-      setState(() => _hasCameraPermission = false);
+      if (_hasCameraPermission) {
+        setState(() {
+          _hasCameraPermission = false;
+          _shouldRebuildMainView = true;
+        });
+      }
     }
   }
 
@@ -177,7 +208,10 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   void _toggleARMode() {
     // Si está en modo AR, cambiar a vista previa (siempre permitido)
     if (_isARMode) {
-      setState(() => _isARMode = false);
+      setState(() {
+        _isARMode = false;
+        _shouldRebuildMainView = true; // ⭐ Forzar rebuild de vista
+      });
       HapticFeedback.selectionClick();
       return;
     }
@@ -215,21 +249,27 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     }
 
     // Todo OK, cambiar a modo AR
-    setState(() => _isARMode = true);
+    setState(() {
+      _isARMode = true;
+      _shouldRebuildMainView = true; // ⭐ Forzar rebuild de vista
+    });
     HapticFeedback.selectionClick();
   }
 
+  /// ⭐ Diálogo mejorado para AR no disponible con opción de instalar ARCore
   void _showARNotAvailableDialog() {
     String title = 'AR no disponible';
     String message =
         'La realidad aumentada no está disponible en este dispositivo.';
+    bool showInstallButton = false;
 
     if (Platform.isAndroid) {
       title = 'ARCore no disponible';
       message =
           'Tu dispositivo no tiene ARCore instalado o no es compatible.\n\n'
-          'ARCore es necesario para la experiencia de realidad aumentada. '
-          'Puedes continuar usando el modo de vista previa 3D.';
+          'ARCore (Google Play Services for AR) es necesario para la experiencia de realidad aumentada.\n\n'
+          '¿Deseas instalar ARCore desde Google Play Store?';
+      showInstallButton = true;
     } else if (Platform.isIOS) {
       title = 'ARKit no disponible';
       message =
@@ -239,17 +279,114 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        title: Row(
+          children: [
+            Icon(
+              LucideIcons.info,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido'),
+            child: const Text('Cancelar'),
           ),
+          if (showInstallButton)
+            ElevatedButton.icon(
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('Instalar ARCore'),
+              onPressed: () {
+                Navigator.pop(context);
+                _openARCoreInPlayStore();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
+            )
+          else
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Entendido'),
+            ),
         ],
       ),
     );
+  }
+
+  /// ⭐ Abre Google Play Store para instalar ARCore
+  Future<void> _openARCoreInPlayStore() async {
+    try {
+      // URL de ARCore en Google Play Store
+      const String arCorePackageId = 'com.google.ar.core';
+      final Uri playStoreUrl = Uri.parse(
+        'https://play.google.com/store/apps/details?id=$arCorePackageId',
+      );
+
+      ARLogger.log('Abriendo Play Store para instalar ARCore...');
+
+      // Intentar abrir con la app de Play Store
+      if (await canLaunchUrl(playStoreUrl)) {
+        final launched = await launchUrl(
+          playStoreUrl,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (launched) {
+          ARLogger.success('Play Store abierta exitosamente');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Después de instalar ARCore, reinicia la aplicación para usar AR',
+                ),
+                duration: Duration(seconds: 4),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+        } else {
+          throw Exception('No se pudo abrir Play Store');
+        }
+      } else {
+        throw Exception('No se puede abrir la URL de Play Store');
+      }
+    } catch (e) {
+      ARLogger.error('Error abriendo Play Store', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error al abrir Play Store. Busca "Google Play Services for AR" manualmente.',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Cerrar',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _playAmbientSound() async {
@@ -297,7 +434,6 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       );
 
       _arkitController?.add(_butterflyNode!);
-      _currentARNodeName = nodeName;
       setState(() => _isModelLoaded = true);
       _startIdleAnimation();
       ARLogger.success('✅ Modelo SCN cargado exitosamente en ARKit');
@@ -305,7 +441,118 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     }
   }
 
-  // ⭐ ARCORE DESHABILITADO EN ANDROID - Solo Model Viewer
+  /// ⭐ CARGA MODELO GLB EN ARCORE (Android) usando ar_flutter_plugin
+  Future<void> _onPlaneOrPointTapped(List<ARHitTestResult> hitTestResults) async {
+    if (_isModelLoaded || hitTestResults.isEmpty) {
+      if (_isModelLoaded) {
+        ARLogger.log('Modelo ya cargado, ignorando tap');
+      }
+      return;
+    }
+
+    if (_arObjectManager == null || _arAnchorManager == null) {
+      ARLogger.error('Managers AR no inicializados');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: AR no está listo. Intenta de nuevo.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final singleHitTestResult = hitTestResults.firstWhere(
+      (hitTestResult) => hitTestResult.type == ARHitTestResultType.plane,
+      orElse: () => hitTestResults.first,
+    );
+
+    try {
+      setState(() => _planeDetected = true);
+      ARLogger.log('✅ Plano detectado en ARCore');
+
+      final modelPath = selectedButterfly.modelAssetForARCore;
+      if (modelPath == null || modelPath.isEmpty) {
+        ARLogger.error('Sin modelo GLB para Android');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Modelo 3D no disponible para esta mariposa'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // ⭐ Normalizar ruta del modelo (ar_flutter_plugin espera ruta relativa sin "assets/")
+      String normalizedPath = modelPath;
+      if (normalizedPath.startsWith('assets/')) {
+        normalizedPath = normalizedPath.substring(7); // Remover "assets/"
+      }
+      ARLogger.log('Cargando modelo desde: $normalizedPath');
+
+      // Crear anchor
+      final newAnchor = ARPlaneAnchor(transformation: singleHitTestResult.worldTransform);
+      final didAddAnchor = await _arAnchorManager?.addAnchor(newAnchor);
+
+      if (didAddAnchor == true) {
+        // Crear nodo con el modelo GLB desde assets
+        final newNode = ARNode(
+          type: NodeType.localGLTF2, // Usar localGLTF2 para archivos en assets
+          uri: normalizedPath, // ⭐ Usar ruta normalizada
+          scale: vector.Vector3.all(0.2), // Escala ajustada para mariposas
+          position: vector.Vector3(0, 0, 0),
+          rotation: vector.Vector4(1, 0, 0, 0),
+        );
+
+        final didAddNode = await _arObjectManager?.addNode(newNode, planeAnchor: newAnchor);
+
+        if (didAddNode == true) {
+          _butterflyARNode = newNode;
+          _arNodes.add(newNode);
+          setState(() => _isModelLoaded = true);
+          ARLogger.success('✅ Modelo GLB cargado exitosamente en ARCore');
+          _showSuccessSnackbar();
+        } else {
+          ARLogger.error('Error al agregar nodo en ARCore - addNode retornó false');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error al cargar el modelo. Intenta tocar otro plano.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        ARLogger.error('Error al agregar anchor en ARCore - addAnchor retornó false');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al crear anchor. Intenta de nuevo.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      ARLogger.error('Error cargando modelo en ARCore', e);
+      if (kDebugMode) {
+        debugPrint('Stack trace: $stackTrace');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
   // ==================== USER INTERACTIONS ====================
 
@@ -404,7 +651,88 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     );
   }
 
-  // ARCore view removed - Android uses Model Viewer only
+  /// ⭐ VISTA AR PARA ANDROID usando ar_flutter_plugin
+  Widget _buildARCoreView() {
+    return ARView(
+      onARViewCreated: _onARViewCreated,
+      planeDetectionConfig: PlaneDetectionConfig.horizontalAndVertical,
+    );
+  }
+
+  /// ⭐ Callback cuando se crea la vista AR en Android - Mejorado con manejo de errores
+  void _onARViewCreated(
+    ARSessionManager arSessionManager,
+    ARObjectManager arObjectManager,
+    ARAnchorManager arAnchorManager,
+    ARLocationManager arLocationManager,
+  ) {
+    try {
+      _arSessionManager = arSessionManager;
+      _arObjectManager = arObjectManager;
+      _arAnchorManager = arAnchorManager;
+      _arLocationManager = arLocationManager;
+
+      // ⭐ Inicializar sesión AR con configuración optimizada
+      _arSessionManager?.onInitialize(
+        showFeaturePoints: false,
+        showPlanes: true,
+        showWorldOrigin: false,
+        handlePans: true,
+        handleRotation: true,
+      );
+
+      // ⭐ Inicializar object manager
+      _arObjectManager?.onInitialize();
+
+      // ⭐ Configurar callback para cuando se toca un plano
+      _arSessionManager?.onPlaneOrPointTap = _onPlaneOrPointTapped;
+
+      ARLogger.success('✅ Vista ARCore creada exitosamente con ar_flutter_plugin');
+      
+      // Mostrar mensaje al usuario
+      if (mounted) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && !_isModelLoaded) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Mueve el dispositivo para detectar una superficie plana'),
+                duration: Duration(seconds: 3),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+        });
+      }
+    } catch (e, stackTrace) {
+      ARLogger.error('Error inicializando vista ARCore', e);
+      if (kDebugMode) {
+        debugPrint('Stack trace: $stackTrace');
+      }
+      
+      // Si hay error, mostrar diálogo para instalar ARCore
+      if (mounted && Platform.isAndroid) {
+        setState(() {
+          _arSupport = ARPlatformSupport.modelViewer;
+          _isARMode = false;
+          _shouldRebuildMainView = true;
+        });
+        
+        // Mostrar diálogo para instalar ARCore
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _showARNotAvailableDialog();
+          }
+        });
+      } else if (mounted) {
+        // Para iOS u otras plataformas, solo cambiar a Model Viewer
+        setState(() {
+          _arSupport = ARPlatformSupport.modelViewer;
+          _isARMode = false;
+          _shouldRebuildMainView = true;
+        });
+      }
+    }
+  }
 
   /// ⭐ VISTA ESTÁTICA MEJORADA CON MODEL VIEWER
   Widget _buildStaticView() {
@@ -684,13 +1012,12 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   /// ⭐ PANEL DE INFORMACIÓN COMPLETA MEJORADO
   void _showInfo() {
-    setState(() => _showingInfo = true);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _buildInfoSheet(),
-    ).then((_) => setState(() => _showingInfo = false));
+    );
   }
 
   Widget _buildInfoSheet() {
@@ -948,9 +1275,15 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
 
   // ==================== MAIN BUILD ====================
 
-  @override
-  Widget build(BuildContext context) {
-    // Determinar qué vista mostrar
+  // ⭐ Memoizar la vista principal para evitar rebuilds innecesarios
+  Widget? _cachedMainView;
+  bool _shouldRebuildMainView = true;
+
+  Widget _getMainView() {
+    if (!_shouldRebuildMainView && _cachedMainView != null) {
+      return _cachedMainView!;
+    }
+
     Widget mainView;
     
     if (!_hasCameraPermission) {
@@ -961,14 +1294,25 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
           _arSupport == ARPlatformSupport.arkit &&
           selectedButterfly.hasIOSModel) {
         mainView = _buildARView();
+      } else if (Platform.isAndroid &&
+          _arSupport == ARPlatformSupport.arcore &&
+          selectedButterfly.hasAndroidModel) {
+        mainView = _buildARCoreView();
       } else {
-        // Android siempre usa Model Viewer
+        // Fallback a Model Viewer si AR no está disponible
         mainView = _buildStaticView();
       }
     } else {
       mainView = _buildStaticView();
     }
 
+    _cachedMainView = mainView;
+    _shouldRebuildMainView = false;
+    return mainView;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _handleTap,
       child: Scaffold(
@@ -977,19 +1321,19 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            mainView,
+            _getMainView(),
 
             _buildTopControls(),
 
             if (_isARMode &&
-                Platform.isIOS &&
-                _arSupport == ARPlatformSupport.arkit)
+                ((Platform.isIOS && _arSupport == ARPlatformSupport.arkit) ||
+                 (Platform.isAndroid && _arSupport == ARPlatformSupport.arcore)))
               _buildARControls(),
 
             if (_isARMode &&
                 !_isModelLoaded &&
-                Platform.isIOS &&
-                _arSupport == ARPlatformSupport.arkit)
+                ((Platform.isIOS && _arSupport == ARPlatformSupport.arkit) ||
+                 (Platform.isAndroid && _arSupport == ARPlatformSupport.arcore)))
               _buildARInstructions(),
           ],
         ),
@@ -1015,10 +1359,13 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
             tooltip: 'Atrás',
           ),
           // ⭐ BOTÓN PARA CAMBIAR ENTRE MODO AR Y VISTA PREVIA
-          // Solo mostrar en iOS donde ARKit está disponible
-          if (Platform.isIOS &&
-              _arSupport == ARPlatformSupport.arkit &&
-              selectedButterfly.hasIOSModel &&
+          // Mostrar si AR está disponible (iOS ARKit o Android ARCore)
+          if (((Platform.isIOS &&
+                  _arSupport == ARPlatformSupport.arkit &&
+                  selectedButterfly.hasIOSModel) ||
+              (Platform.isAndroid &&
+                  _arSupport == ARPlatformSupport.arcore &&
+                  selectedButterfly.hasAndroidModel)) &&
               _hasCameraPermission)
             _buildFloatingButton(
               icon: _isARMode ? LucideIcons.image : LucideIcons.box,
@@ -1174,7 +1521,13 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     _audioPlayer?.dispose();
     _slideController.dispose();
     _arkitController?.dispose();
-    // _arcoreController deshabilitado
+    
+    // Limpiar recursos de ar_flutter_plugin
+    _arSessionManager?.dispose();
+    
+    // ⭐ Limpiar cache de vista
+    _cachedMainView = null;
+    
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

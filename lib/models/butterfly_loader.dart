@@ -3,42 +3,50 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'butterfly.dart';
 
-/// Carga todas las mariposas desde el archivo JSON centralizado
+/// ⭐ Carga todas las mariposas desde el archivo JSON centralizado - Optimizado
 Future<List<Butterfly>> loadButterfliesFromAssets() async {
   try {
     debugPrint('🦋 Cargando mariposas desde el archivo JSON...');
     final String jsonString = await rootBundle.loadString(
       'lib/data/butterflies.json',
     );
-    final Map<String, dynamic> jsonData = json.decode(jsonString);
+    final Map<String, dynamic> jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
-    if (jsonData['butterflies'] == null) {
+    final butterfliesData = jsonData['butterflies'];
+    if (butterfliesData == null) {
       debugPrint('❌ No se encontró la clave "butterflies" en el JSON');
       return [];
     }
 
-    final List<dynamic> butterfliesJson = jsonData['butterflies'] as List;
-    final List<Butterfly> butterflies = butterfliesJson.map((json) {
-      return Butterfly(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? 'Nombre desconocido',
-        scientificName: json['scientificName'] as String? ?? '',
-        description: json['description'] as String? ?? '',
-        imageAsset: json['imageAsset'] as String? ?? '',
-        modelAssetAndroid: json['modelAssetAndroid'] as String? ?? '',
-        modelAssetIOS: json['modelAssetIOS'] as String? ?? '',
-        ambientSound: json['ambientSound'] as String?,
-        characteristics: List<String>.from(json['characteristics'] ?? []),
-        habitat: json['habitat'] as String? ?? '',
-        distribution: json['distribution'] as String? ?? '',
-      );
-    }).toList();
+    if (butterfliesData is! List) {
+      debugPrint('❌ "butterflies" debe ser una lista');
+      return [];
+    }
 
-    debugPrint('✅ Se cargaron ${butterflies.length} especies de mariposas');
+    final List<dynamic> butterfliesJson = butterfliesData;
+    final List<Butterfly> butterflies = [];
+    
+    // ⭐ Usar for loop para mejor manejo de errores individuales
+    for (var i = 0; i < butterfliesJson.length; i++) {
+      try {
+        final json = butterfliesJson[i] as Map<String, dynamic>;
+        butterflies.add(Butterfly.fromJson(json));
+      } catch (e, stackTrace) {
+        debugPrint('⚠️ Error cargando mariposa en índice $i: $e');
+        if (kDebugMode) {
+          debugPrint('Stack trace: $stackTrace');
+        }
+        // Continuar con las demás mariposas
+      }
+    }
+
+    debugPrint('✅ Se cargaron ${butterflies.length} de ${butterfliesJson.length} especies de mariposas');
     return butterflies;
   } catch (e, stackTrace) {
     debugPrint('❌ Error al cargar las mariposas: $e');
-    debugPrint('Stack trace: $stackTrace');
+    if (kDebugMode) {
+      debugPrint('Stack trace: $stackTrace');
+    }
     rethrow;
   }
 }
