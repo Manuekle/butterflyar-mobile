@@ -1,12 +1,11 @@
-// lib/utils/ar_helpers.dart - Versión para ARKit (iOS), ARCore (Android) y Model Viewer (fallback)
+// lib/utils/ar_helpers.dart - Versión para ARCore (Android e iOS) y Model Viewer (fallback)
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 /// Enum para diferentes tipos de soporte AR
 enum ARPlatformSupport {
-  arkit, // iOS ARKit
-  arcore, // Android ARCore
+  arcore, // ARCore (Android e iOS usando ar_flutter_plugin)
   modelViewer, // Android/iOS Model Viewer (fallback)
   none, // Sin soporte AR
 }
@@ -27,7 +26,7 @@ class SimpleARSupport {
         return _cachedSupport;
       }
 
-      // iOS: verificar soporte ARKit (iOS 11+ y dispositivo compatible)
+      // iOS: usar ARCore a través de ar_flutter_plugin (iOS 11+)
       if (Platform.isIOS) {
         try {
           final deviceInfo = DeviceInfoPlugin();
@@ -36,37 +35,21 @@ class SimpleARSupport {
           final majorVersion =
               int.tryParse(systemVersion.split('.').first) ?? 0;
 
-          // Verificar versión mínima de iOS (11.0+)
+          // Verificar versión mínima de iOS (11.0+) para ar_flutter_plugin
           if (majorVersion < 11) {
             debugPrint(
-              'ARKit requires iOS 11.0 or later. Current version: $systemVersion',
+              'ARCore (ar_flutter_plugin) requires iOS 11.0 or later. Current version: $systemVersion',
             );
             _cachedSupport = ARPlatformSupport.modelViewer;
             return _cachedSupport;
           }
 
-          // Verificar si el dispositivo es compatible con ARKit
-          // ARKit requiere un dispositivo con chip A9 o posterior (iPhone 6s/SE/7/8/X, iPad 2017 o posterior)
-          final deviceName = iosInfo.utsname.machine.toLowerCase();
-          final isCompatibleDevice = deviceName.contains(
-            RegExp(
-              r'iphone(8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|[6-9]s|[6-9]splus|[xrsm]|se|se2|se3)|ipad([5-9]|1[0-9]|20|[6-9]th|[6-9]thgen|[6-9]thgeneration|air[3-9]|pro[1-9]|mini[5-9])|ipod7',
-              caseSensitive: false,
-            ),
-          );
-
-          if (!isCompatibleDevice) {
-            debugPrint('Device not compatible with ARKit: $deviceName');
-            _cachedSupport = ARPlatformSupport.modelViewer;
-            return _cachedSupport;
-          }
-
-          _cachedSupport = ARPlatformSupport.arkit;
+          _cachedSupport = ARPlatformSupport.arcore;
           debugPrint(
-            'ARKit is supported on this device ($deviceName, iOS $systemVersion)',
+            'ARCore (ar_flutter_plugin) is supported on this device (iOS $systemVersion)',
           );
         } catch (e) {
-          debugPrint('Error checking iOS ARKit support: $e');
+          debugPrint('Error checking iOS ARCore support: $e');
           _cachedSupport = ARPlatformSupport.modelViewer;
         }
       }
@@ -104,10 +87,8 @@ class SimpleARSupport {
   static Future<String> getARSupportInfo() async {
     final support = await detectARSupport();
     switch (support) {
-      case ARPlatformSupport.arkit:
-        return 'ARKit (iOS)';
       case ARPlatformSupport.arcore:
-        return 'ARCore (Android)';
+        return 'ARCore (Android/iOS)';
       case ARPlatformSupport.modelViewer:
         return '3D Model Viewer';
       case ARPlatformSupport.none:
@@ -123,8 +104,7 @@ class SimpleARSupport {
 
   /// ⭐ Verifica si el dispositivo tiene soporte AR nativo (no Model Viewer)
   static bool isNativeARSupported(ARPlatformSupport support) {
-    return support == ARPlatformSupport.arkit || 
-           support == ARPlatformSupport.arcore;
+    return support == ARPlatformSupport.arcore;
   }
 }
 
@@ -179,10 +159,10 @@ class ARLogger {
   }
 }
 
-/// Clase helper para trabajar con vectores de ARKit
+/// Clase helper para trabajar con vectores (deprecated - usar ArCoreVector3Helper)
+@Deprecated('Usar ArCoreVector3Helper en su lugar')
 class ARKitVector3Helper {
   static dynamic createVector3(double x, double y, double z) {
-    // Esto será reemplazado por la importación real de ARKit
     return {'x': x, 'y': y, 'z': z};
   }
 }

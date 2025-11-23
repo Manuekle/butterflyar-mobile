@@ -5,8 +5,8 @@ class Butterfly {
   final String scientificName;
   final String description;
   final String imageAsset;
-  final String? modelAssetAndroid; // GLB para ARCore/Model Viewer
-  final String? modelAssetIOS; // SCN para ARKit
+  final String? modelAssetAndroid; // GLB para ARCore (Android e iOS)
+  final String? modelAssetIOS; // Deprecated - usar modelAssetAndroid
   final String? ambientSound;
   final List<String> characteristics;
   final String habitat;
@@ -18,8 +18,8 @@ class Butterfly {
     required this.scientificName,
     required this.description,
     required this.imageAsset,
-    this.modelAssetAndroid, // GLB
-    this.modelAssetIOS, // SCN
+    this.modelAssetAndroid, // GLB para Android e iOS
+    this.modelAssetIOS, // Deprecated
     this.ambientSound,
     this.characteristics = const [],
     this.habitat = '',
@@ -28,26 +28,20 @@ class Butterfly {
 
   // ⭐ GETTERS ESPECÍFICOS POR PLATAFORMA
 
-  /// Para ARKit (iOS) - usa SCN
-  String? get modelAssetForARKit => modelAssetIOS;
-
-  /// Para ARCore (Android) - usa GLB
+  /// Para ARCore (Android e iOS) - usa GLB
   String? get modelAssetForARCore => modelAssetAndroid;
 
   /// Para Model Viewer (fallback) - usa GLB
   String? get modelAssetForModelViewer => modelAssetAndroid;
 
-  /// Getter genérico que decide según la plataforma
-  String? get modelAsset {
-    // En tiempo de ejecución, Platform.isIOS decidirá
-    // Pero para JSON serialization, retornamos el GLB por defecto
-    return modelAssetAndroid ?? modelAssetIOS;
-  }
+  /// Getter genérico - usa GLB
+  String? get modelAsset => modelAssetAndroid;
 
   // ⭐ VALIDACIONES
-  bool get hasIOSModel => modelAssetIOS?.isNotEmpty == true;
+  @Deprecated('Usar hasAndroidModel en su lugar')
+  bool get hasIOSModel => modelAssetAndroid?.isNotEmpty == true;
   bool get hasAndroidModel => modelAssetAndroid?.isNotEmpty == true;
-  bool get hasAnyModel => hasIOSModel || hasAndroidModel;
+  bool get hasAnyModel => hasAndroidModel;
 
   // Helper method to create a copy with some fields overridden
   Butterfly copyWith({

@@ -7,7 +7,7 @@
       "description": "La Actinote osomene es una mariposa de la familia Nymphalidae que destaca por sus alas semitransparentes con tonos anaranjados y marrones. Es común en zonas montañosas y húmedas, donde se alimenta del néctar de diversas flores.",
       "imageAsset": "assets/images/actinote_osomene.jpg",
       "modelAssetAndroid": "assets/models/actinote_osomene.glb",
-      "modelAssetIOS": "models.scnassets/actinote_osomene.scn",
+      "modelAssetIOS": "assets/models/actinote_osomene.glb",
       "ambientSound": "assets/sounds/forest_ambient.mp3",
       "characteristics": [
         "Alas anaranjadas con bordes oscuros y zonas translúcidas",
@@ -26,7 +26,7 @@
       "description": "Eresia levina es una mariposa de la familia Nymphalidae reconocida por sus vivos patrones anaranjados y negros. Suele encontrarse en áreas abiertas y soleadas, y su vuelo es ágil y bajo, desplazándose entre arbustos y flores.",
       "imageAsset": "assets/images/eresia_levina.jpg",
       "modelAssetAndroid": "assets/models/eresia_levina.glb",
-      "modelAssetIOS": "models.scnassets/eresia_levina.scn",
+      "modelAssetIOS": "assets/models/eresia_levina.glb",
       "ambientSound": "assets/sounds/forest_ambient.mp3",
       "characteristics": [
         "Alas anaranjadas con bandas negras marcadas",

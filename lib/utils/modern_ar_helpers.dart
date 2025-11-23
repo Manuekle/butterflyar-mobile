@@ -6,8 +6,7 @@ import 'package:flutter/foundation.dart';
 
 /// Enum para diferentes tipos de soporte AR
 enum ARPlatformSupport {
-  arkit, // iOS ARKit
-  arcore, // Android ARCore
+  arcore, // ARCore (Android e iOS usando ar_flutter_plugin)
   webAR, // Web AR (futuro)
   none, // Sin soporte AR
 }
@@ -29,14 +28,14 @@ class ModernARSupport {
         return _cachedSupport;
       }
 
-      // iOS: verificar soporte ARKit
+      // iOS: usar ARCore a través de ar_flutter_plugin
       if (Platform.isIOS) {
         try {
-          // ARKit está disponible en iOS 11+ en dispositivos A9+
+          // ar_flutter_plugin está disponible en iOS 11+
           // Asumimos soporte si es iOS (verificación más específica requiere platform channels)
-          _cachedSupport = ARPlatformSupport.arkit;
+          _cachedSupport = ARPlatformSupport.arcore;
         } catch (e) {
-          debugPrint('Error checking ARKit availability: $e');
+          debugPrint('Error checking ARCore availability: $e');
           _cachedSupport = ARPlatformSupport.none;
         }
       }
@@ -76,10 +75,8 @@ class ModernARSupport {
   static Future<String> getARSupportInfo() async {
     final support = await detectARSupport();
     switch (support) {
-      case ARPlatformSupport.arkit:
-        return 'ARKit compatible (iOS)';
       case ARPlatformSupport.arcore:
-        return 'ARCore compatible (Android)';
+        return 'ARCore compatible (Android/iOS)';
       case ARPlatformSupport.webAR:
         return 'Web AR (limitado)';
       case ARPlatformSupport.none:

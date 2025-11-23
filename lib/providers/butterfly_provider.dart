@@ -98,8 +98,7 @@ class ButterflyProvider with ChangeNotifier {
   // ⭐ Obtener mariposas que tienen modelo 3D - Cacheado
   List<Butterfly> get butterfliesWithModels {
     return _butterflies.where((b) => 
-      (b.modelAssetAndroid?.isNotEmpty == true) || 
-      (b.modelAssetIOS?.isNotEmpty == true)
+      b.modelAssetAndroid?.isNotEmpty == true
     ).toList(growable: false);
   }
 
@@ -124,8 +123,7 @@ class ButterflyProvider with ChangeNotifier {
     final butterfly = getButterflyById(id);
     if (butterfly == null) return false;
 
-    return (butterfly.modelAssetAndroid?.isNotEmpty == true ||
-            butterfly.modelAssetIOS?.isNotEmpty == true) &&
+    return butterfly.modelAssetAndroid?.isNotEmpty == true &&
         butterfly.imageAsset.isNotEmpty;
   }
 
@@ -138,8 +136,7 @@ class ButterflyProvider with ChangeNotifier {
       'arReady': _butterflies
           .where(
             (b) => 
-              (b.modelAssetAndroid?.isNotEmpty == true ||
-                  b.modelAssetIOS?.isNotEmpty == true) &&
+              b.modelAssetAndroid?.isNotEmpty == true &&
               b.imageAsset.isNotEmpty,
           )
           .length,

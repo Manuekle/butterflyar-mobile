@@ -5,8 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 /// Enum para diferentes tipos de soporte AR
 enum ARPlatformSupport {
-  arkit, // iOS ARKit
-  arcore, // Android ARCore
+  arcore, // ARCore (Android e iOS usando ar_flutter_plugin)
   webAR, // Web AR (futuro)
   none, // Sin soporte AR
 }
@@ -28,28 +27,27 @@ class SimpleARSupport {
         return _cachedSupport;
       }
 
-      // iOS: verificar soporte ARKit (iOS 11+ con procesador A9+)
+      // iOS: usar ARCore a través de ar_flutter_plugin (iOS 11+)
       if (Platform.isIOS) {
         try {
           final deviceInfo = DeviceInfoPlugin();
           final iosInfo = await deviceInfo.iosInfo;
 
-          // Verificar versión mínima iOS 11 y modelos compatibles
+          // Verificar versión mínima iOS 11
           final systemVersion = iosInfo.systemVersion;
           final majorVersion =
               int.tryParse(systemVersion.split('.').first) ?? 0;
 
-          // ARKit requiere iOS 11+ y procesador A9+
-          // Simplificamos asumiendo que dispositivos recientes tienen soporte
+          // ar_flutter_plugin requiere iOS 11+ para ARCore
           if (majorVersion >= 11) {
-            _cachedSupport = ARPlatformSupport.arkit;
+            _cachedSupport = ARPlatformSupport.arcore;
           } else {
             _cachedSupport = ARPlatformSupport.none;
           }
         } catch (e) {
-          debugPrint('Error checking iOS ARKit support: $e');
+          debugPrint('Error checking iOS ARCore support: $e');
           // Fallback: asumir soporte si es iOS moderno
-          _cachedSupport = ARPlatformSupport.arkit;
+          _cachedSupport = ARPlatformSupport.arcore;
         }
       }
       // Android: verificar soporte ARCore
@@ -96,10 +94,8 @@ class SimpleARSupport {
   static Future<String> getARSupportInfo() async {
     final support = await detectARSupport();
     switch (support) {
-      case ARPlatformSupport.arkit:
-        return 'ARKit compatible (iOS 11+)';
       case ARPlatformSupport.arcore:
-        return 'ARCore compatible (Android 7.0+)';
+        return 'ARCore compatible (Android 7.0+ / iOS 11+)';
       case ARPlatformSupport.webAR:
         return 'Web AR (limitado)';
       case ARPlatformSupport.none:
