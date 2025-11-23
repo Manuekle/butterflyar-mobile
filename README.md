@@ -12,17 +12,17 @@ Una aplicación educativa multiplataforma que permite explorar mariposas en Real
 ## 📋 Tabla de Contenidos
 
 - [✨ Características](#-características)
-- [🚀 Demo Rápida](#-demo-rápida)
 - [📱 Requisitos](#-requisitos)
 - [⚙️ Instalación](#️-instalación)
-- [🛠️ Configuración](#️-configuración)
+- [🚀 Cómo Usar](#-cómo-usar)
+- [🛠️ Dependencias Principales](#️-dependencias-principales)
 - [🏗️ Estructura del Proyecto](#️-estructura-del-proyecto)
 - [🦋 Gestión de Especies](#-gestión-de-especies)
 - [🔍 Integración QR](#-integración-qr)
 - [👥 Contribución](#-contribución)
-- [📄 Licencia](#-licencia)
 - [📧 Contacto](#-contacto)
 - [🙏 Agradecimientos](#-agradecimientos)
+- [❓ Preguntas Frecuentes](#-preguntas-frecuentes)
 
 ## ✨ Características
 
@@ -61,7 +61,7 @@ Una aplicación educativa multiplataforma que permite explorar mariposas en Real
 ### Para Usuarios
 
 - **Android**: 8.0 (API 26) o superior con soporte ARCore
-- **iOS**: 13.0 o superior con soporte ARKit (iPhone 6s o superior)
+- **iOS**: 11.0 o superior con soporte ARCore (a través de ar_flutter_plugin)
 
 ### Para Desarrolladores
 
@@ -124,19 +124,15 @@ flutter run -d <device_id>
      - Asegúrate de que el dispositivo soporte ARCore
    - **iOS**:
      - Conecta tu dispositivo y confía en el certificado de desarrollador
-     - Asegúrate de que el dispositivo soporte ARKit (iPhone 6s o superior)
+     - Asegúrate de que el dispositivo soporte ARCore (iOS 11.0 o superior)
 
 2. **Configura los modelos 3D**
 
-   - **Para Android**:
+   - **Para Android e iOS** (ambos usan el mismo formato):
 
      1. Coloca los archivos `.glb` en `assets/models/`
      2. Asegúrate de que estén referenciados en `pubspec.yaml`
-
-   - **Para iOS**:
-     1. Crea la carpeta `models.scnassets` en `ios/Runner/` si no existe
-     2. Importa los archivos `.scn` usando Xcode
-     3. Asegúrate de que "Target Membership" esté marcado para el target principal
+     3. Ambos sistemas usan `ar_flutter_plugin` con archivos GLB
 
 3. **Ejecuta la aplicación**
 
@@ -160,9 +156,8 @@ La aplicación utiliza las siguientes dependencias principales:
 | ---------------------- | ------- | ---------------------------------- |
 | `flutter`              | SDK     | SDK principal de Flutter           |
 | `provider`             | ^6.1.5  | Gestión de estado                  |
-| `arkit_plugin`         | ^1.1.2  | Integración con ARKit para iOS     |
-| `ar_flutter_plugin`    | git     | Integración con ARCore para Android|
-| `model_viewer_plus`    | ^1.9.3  | Visualización de modelos 3D        |
+| `ar_flutter_plugin`    | git     | Integración con ARCore (Android e iOS) |
+| `model_viewer_plus`    | ^1.9.3  | Visualización de modelos 3D (fallback) |
 | `mobile_scanner`       | ^7.0.0  | Escaneo de códigos QR              |
 | `permission_handler`   | ^11.3.0 | Manejo de permisos del dispositivo |
 | `google_fonts`         | ^6.2.1  | Fuentes personalizadas             |
@@ -184,8 +179,6 @@ flutter pub get
 butterflyar-mobile/
 ├── android/              # Configuración específica de Android
 ├── ios/                  # Configuración específica de iOS
-│   └── Runner/
-│       └── models.scnassets/  # Modelos 3D para iOS (.scn)
 ├── lib/                  # Código fuente de la aplicación
 │   ├── data/             # Datos JSON de mariposas
 │   ├── models/           # Modelos de datos (Butterfly, etc.)
@@ -196,7 +189,7 @@ butterflyar-mobile/
 │   ├── widgets/          # Widgets reutilizables
 │   └── main.dart         # Punto de entrada de la aplicación
 ├── assets/               # Recursos estáticos
-│   ├── models/           # Modelos 3D para Android (.glb)
+│   ├── models/           # Modelos 3D para Android e iOS (.glb)
 │   ├── images/           # Imágenes de mariposas
 │   ├── sounds/           # Sonidos ambientales
 │   ├── backgrounds/     # Fondos de pantalla
@@ -223,7 +216,7 @@ Las mariposas se definen en `lib/data/butterflies.json` con la siguiente estruct
       "description": "Descripción detallada de la especie...",
       "imageAsset": "assets/images/actinote_osomene.jpg",
       "modelAssetAndroid": "assets/models/actinote_osomene.glb",
-      "modelAssetIOS": "models.scnassets/actinote_osomene.scn",
+      "modelAssetIOS": "assets/models/actinote_osomene.glb",
       "ambientSound": "assets/sounds/forest_ambient.mp3",
       "characteristics": [
         "Característica 1",
@@ -239,12 +232,14 @@ Las mariposas se definen en `lib/data/butterflies.json` con la siguiente estruct
 ### Agregar Nueva Especie
 
 1. Agrega el modelo 3D:
-   - **Android**: Coloca el archivo `.glb` en `assets/models/`
-   - **iOS**: Coloca el archivo `.scn` en `ios/Runner/models.scnassets/`
+   - Coloca el archivo `.glb` en `assets/models/`
+   - **Nota**: Tanto Android como iOS usan el mismo formato GLB
 
 2. Agrega la imagen de la mariposa en `assets/images/`
 
-3. Agrega la entrada en `lib/data/butterflies.json` con todos los campos requeridos
+3. Agrega la entrada en `lib/data/butterflies.json` con todos los campos requeridos:
+   - `modelAssetAndroid`: ruta al archivo `.glb` (usado por Android e iOS)
+   - `modelAssetIOS`: puede ser la misma ruta que `modelAssetAndroid` o dejarse vacío
 
 4. Asegúrate de que los assets estén referenciados en `pubspec.yaml`
 
@@ -270,7 +265,7 @@ La aplicación incluye un escáner de códigos QR que permite asociar códigos c
 
 ## 👥 Contribución
 
-¡Agradecemos tu interés en contribuir a ButterflyAR! 
+¡Agradecemos tu interés en contribuir a ButterflyAR!
 
 ### Reportar Problemas
 
@@ -312,8 +307,9 @@ Un especial agradecimiento a:
 - **No se visualiza el modelo en Realidad Aumentada**
   - Verifica que la cámara tenga los permisos necesarios
   - Asegúrate de tener buena iluminación
-  - Verifica que el dispositivo sea compatible con ARCore (Android) o ARKit (iOS)
-  - El modelo `.glb` (Android) o `.scn` (iOS) debe estar bien exportado y referenciado
+  - Verifica que el dispositivo sea compatible con ARCore (Android e iOS)
+  - El modelo `.glb` debe estar bien exportado y referenciado en `assets/models/`
+  - En Android, asegúrate de tener ARCore (Google Play Services for AR) instalado
   - Intenta reiniciar la aplicación
 
 ### Sobre el Proyecto
@@ -328,4 +324,4 @@ Este proyecto es una colaboración entre **Smurfit Kappa Cartón Colombia** y la
 
 ---
 
-**Desarrollado con ❤️ usando Flutter**
+## 💻 Desarrollado con ❤️ usando Flutter
