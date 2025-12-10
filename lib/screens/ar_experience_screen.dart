@@ -227,8 +227,273 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
   }
 
   void _showInfo() {
-    // TODO: Implementar panel de información
-    _showInfoSnackbar('Panel de información próximamente');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildInfoSheet(),
+    );
+  }
+
+  Widget _buildInfoSheet() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final secondaryColor = isDark ? Colors.white70 : Colors.black54;
+    final sectionTitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2936) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Barra de agarre
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              width: 36,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black26,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Contenido principal
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Encabezado con imagen y nombre
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          image: DecorationImage(
+                            image: AssetImage(widget.butterfly.imageAsset),
+                            fit: BoxFit.cover,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.butterfly.name,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                                fontSize: 20,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.butterfly.scientificName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: secondaryColor,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Descripción
+                  if (widget.butterfly.description.isNotEmpty) ...[
+                    Text(
+                      'Descripción',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.butterfly.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: textColor.withOpacity(0.9),
+                        height: 1.4,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Características
+                  if (widget.butterfly.characteristics.isNotEmpty) ...[
+                    Text(
+                      'Características',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ...widget.butterfly.characteristics.map(
+                      (characteristic) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3, right: 6),
+                              child: Icon(
+                                LucideIcons.check,
+                                size: 14,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                characteristic,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: textColor.withOpacity(0.9),
+                                  height: 1.3,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Hábitat
+                  if (widget.butterfly.habitat.isNotEmpty) ...[
+                    Text(
+                      'Hábitat',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.green[900]!.withOpacity(0.2)
+                            : Colors.green[50],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.treePine,
+                            color: Colors.green[isDark ? 300 : 700],
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              widget.butterfly.habitat,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: textColor.withOpacity(0.9),
+                                height: 1.3,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Distribución
+                  if (widget.butterfly.distribution.isNotEmpty) ...[
+                    Text(
+                      'Distribución',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: sectionTitleColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.blue[900]!.withOpacity(0.2)
+                            : Colors.blue[50],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.globe,
+                            color: Colors.blue[isDark ? 300 : 700],
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              widget.butterfly.distribution,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: textColor.withOpacity(0.9),
+                                height: 1.3,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSuccessSnackbar() {
@@ -311,12 +576,8 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Botón atrás
-          _buildFloatingButton(
-            icon: LucideIcons.chevronLeft,
-            onPressed: () => Navigator.pop(context),
-            tooltip: 'Atrás',
-          ),
+          // Botón atrás (con fondo blanco e ícono blanco)
+          _buildBackButton(),
 
           // Botón cambiar modo AR/Vista (solo si AR está soportado)
           if (_isARSupported && widget.butterfly.hasAndroidModel)
@@ -337,14 +598,16 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // En modo AR: Info y Captura
+          // Botón Info (siempre visible)
+          _buildFloatingButton(
+            icon: LucideIcons.info,
+            onPressed: _showInfo,
+            tooltip: 'Información',
+          ),
+          const SizedBox(height: 16),
+
+          // En modo AR: Captura
           if (_isARMode) ...[
-            _buildFloatingButton(
-              icon: LucideIcons.info,
-              onPressed: _showInfo,
-              tooltip: 'Información',
-            ),
-            const SizedBox(height: 16),
             _buildFloatingButton(
               icon: LucideIcons.camera,
               onPressed: _captureScreen,
@@ -434,7 +697,7 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
     );
   }
 
-  /// Botón flotante sin fondo, solo icono negro
+  /// Botón flotante con fondo blanco semi-transparente (borderRadius 8)
   Widget _buildFloatingButton({
     required IconData icon,
     required VoidCallback onPressed,
@@ -447,10 +710,29 @@ class _ARExperienceScreenState extends State<ARExperienceScreen>
         child: Container(
           width: 44,
           height: 44,
-          color: Colors.transparent,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Icon(icon, color: Colors.black87, size: 22),
         ),
       ),
+    );
+  }
+
+  /// Botón de atrás - solo ícono blanco, SIN fondo
+  Widget _buildBackButton() {
+    return IconButton(
+      icon: const Icon(LucideIcons.chevronLeft, color: Colors.white, size: 22),
+      onPressed: () => Navigator.pop(context),
+      tooltip: 'Atrás',
     );
   }
 
