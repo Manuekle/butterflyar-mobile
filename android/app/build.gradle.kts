@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.butterflyar"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36  // Requerido por plugins (camera, gal, etc.)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

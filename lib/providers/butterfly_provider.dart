@@ -1,11 +1,20 @@
 import 'package:flutter/foundation.dart';
 import '../models/butterfly.dart';
 import '../models/butterfly_loader.dart';
+import '../services/cache_service.dart';
+import '../utils/performance_utils.dart';
 
 class ButterflyProvider with ChangeNotifier {
   List<Butterfly> _butterflies = [];
   // ⭐ Cache para búsquedas rápidas por ID (O(1) en lugar de O(n))
   final Map<String, Butterfly> _butterfliesById = {};
+  
+  // ⭐ Cache para resultados de búsqueda
+  final _searchCache = CacheService<String, List<Butterfly>>(
+    ttl: const Duration(minutes: 5),
+    maxSize: 50,
+  );
+  
   bool _isLoading = false;
   String? _error;
   bool _hasInitialized = false;
@@ -26,10 +35,15 @@ class ButterflyProvider with ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🦋 Cargando mariposas desde assets...');
-      final loadedButterflies = await loadButterfliesFromAssets();
+      final result = await PerformanceUtils.measurePerformance(
+        label: 'Load Butterflies',
+        action: () async {
+          debugPrint('🦋 Cargando mariposas desde assets...');
+          return await loadButterfliesFromAssets();
+        },
+      );
 
-      _butterflies = loadedButterflies;
+      _butterflies = result;
       // ⭐ Construir cache de búsqueda por ID para acceso O(1)
       _butterfliesById.clear();
       for (final butterfly in _butterflies) {
@@ -61,6 +75,7 @@ class ButterflyProvider with ChangeNotifier {
   // Recargar mariposas (forzar recarga)
   Future<void> reloadButterflies() async {
     _hasInitialized = false;
+    _searchCache.clear(); // Limpiar caché de búsqueda
     await loadButterflies();
   }
 
@@ -78,7 +93,7 @@ class ButterflyProvider with ChangeNotifier {
     return butterfly;
   }
 
-  // ⭐ Buscar mariposas por nombre - Optimizado con early return
+  // ⭐ Buscar mariposas por nombre - Optimizado con caché y debounce
   List<Butterfly> searchByName(String query) {
     if (query.isEmpty || _butterflies.isEmpty) {
       return butterflies;
@@ -87,12 +102,29 @@ class ButterflyProvider with ChangeNotifier {
     final lowerQuery = query.toLowerCase().trim();
     if (lowerQuery.isEmpty) return butterflies;
 
-    // Usar where con toList() para mejor rendimiento
-    return _butterflies.where((butterfly) {
+    // Verificar caché
+    final cached = _searchCache.get(lowerQuery);
+    if (cached != null) {
+      if (kDebugMode) {
+        debugPrint('🎯 Cache hit for search: "$lowerQuery"');
+      }
+      return cached;
+    }
+
+    // Buscar y cachear resultado
+    final results = _butterflies.where((butterfly) {
       final name = butterfly.name.toLowerCase();
       final scientificName = butterfly.scientificName.toLowerCase();
       return name.contains(lowerQuery) || scientificName.contains(lowerQuery);
-    }).toList(growable: false); // Lista de tamaño fijo para mejor rendimiento
+    }).toList(growable: false);
+
+    _searchCache.set(lowerQuery, results);
+    
+    if (kDebugMode) {
+      debugPrint('🔍 Search "$lowerQuery" found ${results.length} results');
+    }
+
+    return results;
   }
 
   // ⭐ Obtener mariposas que tienen modelo 3D - Cacheado
@@ -177,6 +209,7 @@ class ButterflyProvider with ChangeNotifier {
   void dispose() {
     _butterflies.clear();
     _butterfliesById.clear(); // ⭐ Limpiar cache
+    _searchCache.clear(); // ⭐ Limpiar caché de búsqueda
     super.dispose();
   }
 }
